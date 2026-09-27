@@ -8,7 +8,7 @@ test('categories expose stats for all 12 categories', async () => {
   const cats = await repo.getCategories();
   assert.equal(cats.length, 12);
   const taktik = cats.find((c) => c.slug === 'mac-taktik')!;
-  assert.equal(taktik.stats.topicCount, 2);
+  assert.equal(taktik.stats.topicCount, 6, '2 discussion topics + 4 demo match rooms');
   assert.ok(taktik.stats.postCount >= taktik.stats.topicCount);
   assert.ok(taktik.stats.lastTopic);
 });

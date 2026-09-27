@@ -58,6 +58,11 @@ export const DEMO_TOPICS: DemoTopicSeed[] = [
   { id: 't-u19', categorySlug: 'altyapi-akademi', title: 'U19 takımını izleyenler: A takıma en hazır isim kim?', authorId: 'u-akademi', views: 870 },
   { id: 't-koreografi', categorySlug: 'taraftar-tribun', title: 'Sezon açılışı koreografisi için fikir havuzu', authorId: 'u-tribun1905', views: 1490 },
   { id: 't-mac-izleme', categorySlug: 'serbest', title: 'Deplasman maçlarını nerede izliyorsunuz? Şehir şehir öneriler', authorId: 'u-ankara', views: 690 },
+  // Auto-generated match rooms (see services/match/demoMatchRepository.ts)
+  { id: 't-mac-canli', categorySlug: 'mac-taktik', title: 'Galatasaray – Trabzonspor | Canlı Maç Konusu', authorId: 'u-mod', views: 3120 },
+  { id: 't-mac-deplasman', categorySlug: 'mac-taktik', title: 'Beşiktaş – Galatasaray | Canlı Maç Konusu', authorId: 'u-mod', views: 640 },
+  { id: 't-mac-avrupa', categorySlug: 'mac-taktik', title: 'Galatasaray – Ajax | Canlı Maç Konusu', authorId: 'u-mod', views: 210 },
+  { id: 't-mac-gecen', categorySlug: 'mac-taktik', title: 'Galatasaray – Kasımpaşa | Canlı Maç Konusu', authorId: 'u-mod', views: 2890 },
 ];
 
 export const DEMO_POSTS: DemoPostSeed[] = [
@@ -269,4 +274,40 @@ export const DEMO_POSTS: DemoPostSeed[] = [
     minutesAgo: 60 * 24 * 1 + 60,
     body: 'Deplasman maçlarını kalabalık izlemek başka keyif. Şehrinizde taraftarların toplandığı mekânları paylaşalım; buluşma bölümüne de bağlantı veririz.',
   },
+  // Match rooms
+  {
+    id: 'p-canli-0',
+    topicId: 't-mac-canli',
+    authorId: 'u-mod',
+    minutesAgo: 60 * 24 * 3,
+    body: 'Süper Lig · RAMS Park\n\nMaç boyunca yorumlarını bu konuya yaz. Saygılı dil, küfür yok; iddiaları kaynağıyla paylaş.',
+  },
+  { id: 'p-canli-1', topicId: 't-mac-canli', authorId: 'u-tribun1905', minutesAgo: 70, body: 'Maç başladı, tribünler tıklım tıklım. İlk dakikalardan önde basarak başladık.' },
+  { id: 'p-canli-2', topicId: 't-mac-canli', authorId: 'u-aslanpence', minutesAgo: 48, body: '23. dakikadaki gol muhteşemdi! Ceza sahası dışından o şutu kaleci göremedi bile.' },
+  { id: 'p-canli-3', topicId: 't-mac-canli', authorId: 'u-taktik', minutesAgo: 22, body: 'Devre arası notu: orta saha üstünlüğü bizde ama ikinci topları kaybediyoruz. İkinci yarıda ön liberonun daha geride kalması lazım.' },
+  { id: 'p-canli-4', topicId: 't-mac-canli', authorId: 'u-taktik', minutesAgo: 5, body: 'Kontra ataktan yediğimiz gol, bek bindirmeleri konusunda konuştuğumuz şeyin ta kendisi. İki bek aynı anda çıkmamalı.' },
+  { id: 'p-canli-5', topicId: 't-mac-canli', authorId: 'u-ankara', minutesAgo: 2, body: 'Daha 30 dakikadan fazla var, tribün sesini yükseltmeli. Daima Galatasaray!' },
+  {
+    id: 'p-deplasman-0',
+    topicId: 't-mac-deplasman',
+    authorId: 'u-mod',
+    minutesAgo: 60 * 24 * 2,
+    body: 'Süper Lig · Deplasman\n\nMaç boyunca yorumlarını bu konuya yaz. Saygılı dil, küfür yok; iddiaları kaynağıyla paylaş.',
+  },
+  {
+    id: 'p-avrupa-0',
+    topicId: 't-mac-avrupa',
+    authorId: 'u-mod',
+    minutesAgo: 60 * 24 * 2,
+    body: 'UEFA Şampiyonlar Ligi · RAMS Park\n\nMaç boyunca yorumlarını bu konuya yaz. Saygılı dil, küfür yok; iddiaları kaynağıyla paylaş.',
+  },
+  {
+    id: 'p-gecen-0',
+    topicId: 't-mac-gecen',
+    authorId: 'u-mod',
+    minutesAgo: 60 * 24 * 7,
+    body: 'Süper Lig · RAMS Park\n\nMaç boyunca yorumlarını bu konuya yaz. Saygılı dil, küfür yok; iddiaları kaynağıyla paylaş.',
+  },
+  { id: 'p-gecen-1', topicId: 't-mac-gecen', authorId: 'u-kopenhag', minutesAgo: 60 * 24 * 4, body: 'Geriye düşüp geri dönmek bu takımın karakteri. İkinci yarı tempo bambaşkaydı.' },
+  { id: 'p-gecen-2', topicId: 't-mac-gecen', authorId: 'u-akademi', minutesAgo: 60 * 24 * 4 - 30, body: 'Oyuna sonradan giren gençlerin enerjisi farkı yarattı; rotasyon tartışmasına iyi bir cevap.' },
 ];

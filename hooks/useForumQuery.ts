@@ -88,7 +88,8 @@ export function useForumQuery<T>(
     if (!enabled) return;
     const e = cache.get(key);
     if (e?.promise) return;
-    const fresh = e && e.status === 'success' && Date.now() - e.updatedAt < staleTime;
+    // A floor of 1s prevents a refetch loop when staleTime is 0 (each fetch updates `updatedAt`).
+    const fresh = e && e.status === 'success' && Date.now() - e.updatedAt < Math.max(staleTime, 1000);
     // Errors are not retried automatically (avoids retry storms); the UI offers an explicit retry.
     const failedRecently = e && e.status === 'error' && e.updatedAt > 0;
     if (!fresh && !failedRecently) void fetchKey(key, () => fnRef.current());
