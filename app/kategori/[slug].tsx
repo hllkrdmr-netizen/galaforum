@@ -7,6 +7,7 @@ import { CATEGORY_BY_SLUG } from '../../constants/categories';
 import { colors, layout, radius, spacing } from '../../constants/theme';
 import { useForumQuery } from '../../hooks/useForumQuery';
 import { useResponsive } from '../../hooks/useResponsive';
+import { FollowCategoryButton } from '../../features/community/FollowButtons';
 import { CategoryIcon } from '../../features/forum/CategoryIcon';
 import { TopicRow } from '../../features/forum/TopicRow';
 import { forum } from '../../services/forum';
@@ -71,7 +72,10 @@ export default function CategoryScreen() {
                 </AppText>
               </View>
             </View>
-            <Button label="Konu Aç" icon="add" onPress={openCreate} style={{ marginTop: spacing.lg }} />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.lg }}>
+              <Button label="Konu Aç" icon="add" onPress={openCreate} />
+              <FollowCategoryButton slug={category.slug} />
+            </View>
           </Container>
         }
         ListEmptyComponent={

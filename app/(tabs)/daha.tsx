@@ -58,6 +58,8 @@ export default function DahaTab() {
           ) : (
             <MenuRow icon="log-in-outline" label="Giriş yap / Üye ol" hint="E-posta ile güvenli giriş" href="/giris" />
           )}
+          <MenuRow icon="bookmark-outline" label="Takip ettiklerin" hint="Üyeler, konular ve kategoriler" href="/takip" />
+          <MenuRow icon="location-outline" label="Buluşmalar" hint="Maç günü buluşmaları ve ortak yolculuklar" href="/bulusmalar" />
           <MenuRow icon="notifications-outline" label="Bildirimler" hint="Yanıtlar, bahsetmeler ve maç uyarıları" soon />
           <MenuRow icon="search-outline" label="Forumda ara" href="/ara" />
           <MenuRow icon="create-outline" label="Konu Aç" href="/konu-ac" />

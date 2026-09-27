@@ -1,6 +1,6 @@
 # GalaForum — Roadmap & known limitations
 
-## Done (Phase 0–5)
+## Done (Phase 0–6)
 - Phase 0: audit (see `AUDIT.md`)
 - Phase 1: Expo Router tabs + stack, design tokens, typography scale, UI kit, responsive container, data layer
   (`ForumRepository` with demo + Supabase implementations), core Supabase schema with RLS
@@ -13,6 +13,9 @@
   public profiles, ranked full-text search with category/member/date filters and sorting. See `PHASE4.md`.
 - Phase 5: match hub with countdown, live match room (score, minute, events, reactions, match topic), lineup
   builder with drag-and-drop and sharing, selective realtime. See `PHASE5.md`.
+- UX simplification pass (see `UX-SADELESTIRME.md`).
+- Phase 6: profiles (bio, city, favourite category, level), follows (users/topics/categories), automatic badges,
+  meetups with city filter, capacity and map preview, community hub. See `PHASE6.md`.
 
 ## Known limitations
 - **Dependencies not yet added:** `@tanstack/react-query`, `zustand`, `eslint`/`eslint-config-expo`,
@@ -28,7 +31,6 @@
 - Demo interactions are session-only; accounts are disabled in demo mode.
 
 ## Next
-- Phase 6 — Community: profiles, follows, badges, meetups + map
 - Phase 7 — Notifications (in-app + Expo push foundations, preferences)
 - Phase 8 — Moderation roles, tools and audit logs
 - Phase 9 — QA/release

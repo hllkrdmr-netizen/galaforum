@@ -1,12 +1,5 @@
-import { SectionScreen } from '../../features/sections/SectionScreen';
+import { CommunityHubScreen } from '../../features/community/CommunityHubScreen';
 
 export default function ToplulukTab() {
-  return (
-    <SectionScreen
-      title="Topluluk"
-      icon="people-outline"
-      description="Maç öncesi buluşmalar, şehir grupları ve tribün kültürü."
-      categorySlugs={['mac-oncesi-bulusmalar', 'taraftar-tribun']}
-    />
-  );
+  return <CommunityHubScreen />;
 }

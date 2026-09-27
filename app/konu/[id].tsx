@@ -13,6 +13,7 @@ import { formatCount } from '../../lib/format';
 import { PostItem } from '../../features/forum/PostItem';
 import { topicBadges } from '../../features/forum/TopicRow';
 import { SignInPrompt } from '../../features/auth/SignInPrompt';
+import { FollowTopicButton } from '../../features/community/FollowButtons';
 import { forum } from '../../services/forum';
 
 export default function TopicScreen() {
@@ -61,7 +62,7 @@ function TopicContent({ id }: { id: string }) {
 
   return (
     <View style={styles.screen}>
-      <ScreenHeader title={t.category.name} />
+      <ScreenHeader title={t.category.name} right={<FollowTopicButton topicId={t.id} />} />
       <FlatList
         ref={list}
         keyboardShouldPersistTaps="handled"

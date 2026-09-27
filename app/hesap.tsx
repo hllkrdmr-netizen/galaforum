@@ -7,6 +7,7 @@ import { colors, radius, spacing } from '../constants/theme';
 import { Notice } from '../features/auth/AuthLayout';
 import { useAuth } from '../lib/auth/AuthProvider';
 import { AuthError, validateUsername } from '../lib/auth/validation';
+import { ProfileDetails } from '../features/community/ProfileDetails';
 
 const ROLE_LABEL = { user: 'Üye', verified: 'Onaylı Üye', moderator: 'Moderatör', admin: 'Yönetici' } as const;
 const DELETE_WORD = 'SİL';
@@ -143,6 +144,8 @@ export default function AccountScreen() {
               style={{ marginTop: spacing.md }}
             />
           </View>
+
+          {profile ? <ProfileDetails username={profile.username} /> : null}
 
           <View style={styles.section}>
             <SectionHeader overline="Güvenlik" title="Oturum" />
