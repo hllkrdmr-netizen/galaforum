@@ -10,7 +10,7 @@ import { formatCount } from '../../lib/format';
 import type { ForumOverview } from '../../types/forum';
 import { SearchBar } from '../forum/SearchBar';
 
-const LION = require('../../assets/images/lion-hero.png');
+const LION = require('../../assets/images/lion-hero-realistic.png');
 
 export function HeroSection({
   overview,
@@ -27,7 +27,8 @@ export function HeroSection({
   // Lion composition: large, anchored right, partially cropped for a cinematic feel.
   const lionSize = isDesktop ? 700 : isWide ? Math.min(620, width * 0.8) : Math.min(560, width * 1.08);
   const innerWidth = Math.min(width, layout.maxContentWidth);
-  const lionRight = isDesktop ? -60 : isWide ? -lionSize * 0.16 : -lionSize * 0.26;
+  // Keep only the outer red mane tip beyond the viewport; preserve the supplied image.
+  const lionRight = -lionSize * 0.09;
   const lionTop = isDesktop ? -30 : insets.top + (isWide ? 0 : 6);
   const textTop = isDesktop ? 0 : isWide ? lionSize * 0.34 : lionSize * 0.58;
   // Veil stops are computed against the full viewport so there is no visible seam at the container edge.
@@ -48,9 +49,9 @@ export function HeroSection({
         end={{ x: 0.55, y: 0.7 }}
         style={StyleSheet.absoluteFill}
       />
-      {/* Lion layer — aligned to the content column, bleeding off the right edge */}
+      {/* Lion layer — anchored to the viewport, with the outer mane tip clipped */}
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-        <View style={{ flex: 1, width: '100%', maxWidth: innerWidth, alignSelf: 'center' }}>
+        <View style={{ flex: 1, width: '100%' }}>
           <View
             pointerEvents="none"
             accessibilityElementsHidden
