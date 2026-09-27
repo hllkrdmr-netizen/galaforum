@@ -63,3 +63,17 @@ export function initials(name: string): string {
   const second = parts.length > 1 ? parts[1][0] ?? '' : parts[0][1] ?? '';
   return (first + second).toLocaleUpperCase('tr-TR');
 }
+
+/**
+ * Single, compact post timestamp: "14 dk önce", "dün 16:23", "3 gün önce", "26 Eyl 16:23".
+ * The full date stays available via formatDateTime for accessibility labels.
+ */
+export function formatPostTime(iso: string, now: number = Date.now()): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const hhmm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const rel = formatRelativeTime(iso, now);
+  if (rel === 'dün') return `dün ${hhmm}`;
+  if (/ (dk|sa|gün) önce$|^az önce$/.test(rel)) return rel;
+  return `${rel} ${hhmm}`;
+}

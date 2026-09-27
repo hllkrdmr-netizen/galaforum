@@ -4,8 +4,12 @@ import { colors, spacing } from '../../constants/theme';
 import { AppText } from './AppText';
 import { PressableScale } from './PressableScale';
 
+/**
+ * One-line section heading: small gold bar + title (+ optional text action).
+ * `overline` is accepted for backwards compatibility but no longer rendered —
+ * a single heading per section keeps screens calm.
+ */
 export function SectionHeader({
-  overline,
   title,
   actionLabel,
   onAction,
@@ -17,19 +21,10 @@ export function SectionHeader({
 }) {
   return (
     <View style={styles.row}>
-      <View style={{ flex: 1 }}>
-        {overline ? (
-          <View style={styles.overlineRow}>
-            <View style={styles.bar} />
-            <AppText variant="overline" tone="gold" uppercase>
-              {overline}
-            </AppText>
-          </View>
-        ) : null}
-        <AppText variant="h1" accessibilityRole="header">
-          {title}
-        </AppText>
-      </View>
+      <View style={styles.bar} />
+      <AppText variant="h2" accessibilityRole="header" style={{ flex: 1 }} numberOfLines={1}>
+        {title}
+      </AppText>
       {actionLabel && onAction ? (
         <PressableScale accessibilityRole="button" onPress={onAction} style={styles.action}>
           <AppText variant="small" tone="gold" style={{ fontWeight: '700' }}>
@@ -42,8 +37,7 @@ export function SectionHeader({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.md, marginBottom: spacing.lg },
-  overlineRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
-  bar: { width: 18, height: 2, backgroundColor: colors.gold, borderRadius: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+  bar: { width: 3, height: 18, backgroundColor: colors.gold, borderRadius: 2 },
   action: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xs },
 });

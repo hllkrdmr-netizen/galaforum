@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import {
   AppText,
   Button,
+  IconButton,
   Container,
   EmptyState,
   ErrorState,
@@ -30,6 +31,8 @@ const ROOM_PAGE = 20;
 
 export default function MatchRoomScreen() {
   const { id = '' } = useLocalSearchParams<{ id: string }>();
+  const { width } = useWindowDimensions();
+  const [tab, setTab] = useState<'akis' | 'yorumlar'>('akis');
   const detail = useForumQuery(`match:detail:${id}`, () => matches.getMatch(id), { staleTime: 10_000 });
   const match = detail.data?.match;
   const topicId = match?.topicId ?? null;
@@ -87,10 +90,15 @@ export default function MatchRoomScreen() {
 
   const live = isLive(match.status);
   const t = room.data;
+  // Narrow screens: timeline and comments as tabs instead of one long scroll.
+  const tabbed = width < 760 && match.status !== 'scheduled';
 
   return (
     <View style={styles.screen}>
-      <ScreenHeader title={live ? 'Canlı Maç Odası' : 'Maç Detayı'} />
+      <ScreenHeader
+        title={live ? 'Canlı Maç Odası' : 'Maç Detayı'}
+        right={topicId ? <IconButton icon="open-outline" label="Tüm maç konusunu aç" onPress={() => router.push(`/konu/${topicId}`)} /> : null}
+      />
       <ScrollView contentContainerStyle={{ paddingBottom: 80 }} keyboardShouldPersistTaps="handled">
         <Container style={{ paddingTop: spacing.xl, gap: spacing.xl, maxWidth: 860 }}>
           <Scoreboard match={match} />
@@ -106,21 +114,36 @@ export default function MatchRoomScreen() {
 
           {live ? <Reactions matchId={match.id} initial={detail.data.reactions} /> : null}
 
-          <View style={styles.row}>
+          {match.status === 'scheduled' ? (
             <Button
               label="İlk 11’ini kur"
               variant="secondary"
               icon="grid-outline"
               onPress={() => router.push({ pathname: '/ilk-11', params: { mac: match.id } })}
             />
-            {topicId ? (
-              <Button label="Tüm konuyu aç" variant="ghost" icon="open-outline" onPress={() => router.push(`/konu/${topicId}`)} />
-            ) : null}
-          </View>
+          ) : null}
 
-          {match.status !== 'scheduled' ? (
+          {tabbed ? (
+            <View style={styles.tabs} accessibilityRole="tablist">
+              {(['akis', 'yorumlar'] as const).map((k) => (
+                <PressableScale
+                  key={k}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: tab === k }}
+                  onPress={() => setTab(k)}
+                  style={[styles.tab, tab === k && styles.tabOn]}
+                >
+                  <AppText variant="small" style={{ fontWeight: '800', color: tab === k ? colors.goldSoft : colors.textMuted }}>
+                    {k === 'akis' ? 'Akış' : `Yorumlar${t ? ` (${t.replyCount})` : ''}`}
+                  </AppText>
+                </PressableScale>
+              ))}
+            </View>
+          ) : null}
+
+          {match.status !== 'scheduled' && (!tabbed || tab === 'akis') ? (
             <View>
-              <SectionHeader overline="Maç akışı" title="Önemli anlar" />
+              {tabbed ? null : <SectionHeader title="Önemli anlar" />}
               <View style={styles.group}>
                 <View style={{ paddingHorizontal: spacing.lg }}>
                   <EventTimeline events={detail.data.events} match={match} />
@@ -129,8 +152,9 @@ export default function MatchRoomScreen() {
             </View>
           ) : null}
 
+          {!tabbed || tab === 'yorumlar' ? (
           <View>
-            <SectionHeader overline={live ? 'Canlı' : 'Maç konusu'} title="Taraftar yorumları" />
+            {tabbed ? null : <SectionHeader title="Taraftar yorumları" />}
             {!topicId ? (
               <EmptyState compact title="Bu maç için konu henüz açılmadı." />
             ) : room.isLoading ? (
@@ -149,7 +173,7 @@ export default function MatchRoomScreen() {
                   <PressableScale accessibilityRole="link" onPress={() => router.push(`/konu/${t.id}`)} style={styles.older}>
                     <Ionicons name="time-outline" size={14} color={colors.gold} />
                     <AppText variant="small" tone="gold" style={{ fontWeight: '700' }}>
-                      Önceki yorumlar için tüm konuyu aç
+                      Önceki yorumlar
                     </AppText>
                   </PressableScale>
                 ) : null}
@@ -177,6 +201,7 @@ export default function MatchRoomScreen() {
               </>
             )}
           </View>
+          ) : null}
 
           <AppText variant="caption" tone="subtle">
             {matchTitle(match)} · {matches.mode === 'demo' ? 'Demo verisi — gerçek maç bilgisi değildir.' : 'Skor ve dakika maç yönetimi tarafından güncellenir.'}
@@ -205,7 +230,7 @@ function Reactions({ matchId, initial }: { matchId: string; initial: ReactionCou
   };
   return (
     <View style={{ gap: spacing.sm }}>
-      <View style={styles.row} accessibilityLabel="Maç tepkileri">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.reactions} accessibilityLabel="Maç tepkileri">
         {REACTIONS.map((r) => (
           <PressableScale
             key={r.type}
@@ -223,7 +248,7 @@ function Reactions({ matchId, initial }: { matchId: string; initial: ReactionCou
             </AppText>
           </PressableScale>
         ))}
-      </View>
+      </ScrollView>
       {error ? (
         <AppText variant="caption" tone="danger" accessibilityRole="alert">
           {error}
@@ -237,12 +262,16 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, alignItems: 'center' },
   group: { borderRadius: radius.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
+  reactions: { flexDirection: 'row', gap: spacing.xs },
+  tabs: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border },
+  tab: { flex: 1, alignItems: 'center', minHeight: 44, justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabOn: { borderBottomColor: colors.gold },
   reaction: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: 44,
-    paddingHorizontal: spacing.lg,
+    gap: 6,
+    minHeight: 40,
+    paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.borderStrong,

@@ -1,5 +1,7 @@
 # Sadeleştirme analizi — 2026-09-27
 
+> **Durum:** 9 maddenin tamamı `ux/sadelestirme` dalında uygulandı (bkz. en alttaki “Uygulama notları”).
+
 Kapsam: Faz 5 sonrası tüm ana ekranlar, 390 px mobil ve 1440 px masaüstü web ekran görüntüleri üzerinden
 (demo verisiyle). Amaç: daha az görsel gürültü, daha net hiyerarşi, daha kısa kaydırma — marka yönünü
 (koyu bordo/altın, aslan hero, forum-önce yapı) değiştirmeden.
@@ -105,3 +107,18 @@ konu sayısı ~4 → ~7.
 
 Not: `features/forum/Interactions.tsx`, `PostItem.tsx` ve `TabBar.tsx` senin Faz 3 / dock değişikliklerini içerdiği
 için bu dosyalara dokunan maddeler (5 ve 8) onayınla yapılmalı.
+
+## Uygulama notları
+
+| # | Madde | Uygulama |
+| --- | --- | --- |
+| 1 | Konu satırı | Başlık + tek meta satırı (kategori/yazar · yanıt · son aktivite); sabit/kilitli/popüler küçük ikon; avatar 32 px; “Popüler” eşiği 5 yanıt veya 3.000 görüntülenme |
+| 2 | Bölüm başlıkları | `SectionHeader` tek satır: altın çizgi + H2 başlık; üst etiket artık gösterilmiyor |
+| 3 | Ana sayfa | Hero: kısa slogan, tek “Konu Aç” düğmesi, istatistik satırı yok. Sıra: Son mesaj şeridi → Şu an konuşulanlar (5) → Kategoriler |
+| 4 | Yakında listeleri | Transfer ve Topluluk’tan kaldırıldı; başlıkta tek “Konu Aç”, liste başlığında “Tümü”; transfer etiket açıklaması katlanır |
+| 5 | Mesaj eylemleri | Kalp + sayı, alıntı ikonu, “⋯” menüsünde Bildir; tek zaman etiketi (“dün 16:23”); ilk mesaj çerçevesiz, biraz büyük yazı; tek sayfalı konuda sayfalama gizli; yazar ve @bahsetme profile gider |
+| 6 | Arama | “Filtrele” düğmesi + açılır panel; etkin filtreler kaldırılabilir çipler |
+| 7 | Konu Aç | Başlık → Mesaj → Kategori (seçili kategori tek çip, “Değiştir” ile liste) → Anket |
+| 8 | Canlı maç odası | Tepkiler tek satır; “Tüm konuyu aç” başlıkta ikon; İlk 11 yalnızca maç öncesi; dar ekranda “Akış / Yorumlar” sekmeleri |
+| 9 | Kategoriler | Mobilde ikon + ad + “N konu · zaman”; geniş ekranda açıklama ve son konu; Daha’da aynı sade satır |
+| + | Maç merkezi | Açıklama ve kutu başlık kaldırıldı; 1 günden uzak maçta saniye yok; maç konuları taktik listesinden çıkarıldı; İlk 11 bağlantısı maç kartında |

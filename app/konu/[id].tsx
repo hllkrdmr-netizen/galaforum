@@ -99,11 +99,11 @@ function TopicContent({ id }: { id: string }) {
           </View>
         )}
         ListFooterComponent={<Container>
-          <View style={[styles.metaRow, { paddingVertical: spacing.lg }]}>
+          {cursor > 0 || t.nextCursor !== null ? <View style={[styles.metaRow, { paddingVertical: spacing.lg }]}>
             <Button label="Önceki sayfa" variant="secondary" disabled={cursor === 0} onPress={() => { setCursor(Math.max(0, cursor - 20)); list.current?.scrollToOffset({ offset: 0 }); }} />
             <AppText>Sayfa {Math.floor(cursor / 20) + 1}</AppText>
             <Button label="Sonraki sayfa" variant="secondary" disabled={t.nextCursor === null} onPress={() => { if (t.nextCursor !== null) setCursor(t.nextCursor); list.current?.scrollToOffset({ offset: 0 }); }} />
-          </View>
+          </View> : null}
           {t.isLocked ? <View style={styles.locked}><AppText tone="subtle">Bu konu yanıtlara kapatılmıştır.</AppText></View> :
             <><SignInPrompt /><ReplyComposer topicId={id} quote={quote} clearQuote={() => setQuote(null)} onSent={() => { setCursor(Math.floor((t.replyCount + 1) / 20) * 20); }} /></>}
         </Container>}

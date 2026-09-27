@@ -20,6 +20,7 @@ export default function CreateTopicScreen() {
   const params = useLocalSearchParams<{ kategori?: string }>();
   const [categorySlug, setCategorySlug] = useState(params.kategori && CATEGORY_BY_SLUG[params.kategori] ? params.kategori : '');
   const [title, setTitle] = useState('');
+  const [pickCategory, setPickCategory] = useState(false);
   const [poll, setPoll] = useState<PollInput>();
   const [body, setBody] = useState('');
   const [errors, setErrors] = useState<TopicValidationErrors>({});
@@ -54,33 +55,8 @@ export default function CreateTopicScreen() {
             Açmadan önce aramayı kullan; benzer bir konu varsa oraya katılmak tartışmayı güçlendirir.
           </AppText>
 
-          <AppText variant="overline" tone="gold" uppercase style={styles.label}>
-            1 · Kategori
-          </AppText>
-          <View style={styles.cats} accessibilityRole="radiogroup">
-            {DEFAULT_CATEGORIES.map((c) => {
-              const selected = c.slug === categorySlug;
-              return (
-                <PressableScale
-                  key={c.slug}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: selected }}
-                  accessibilityLabel={c.name}
-                  onPress={() => setCategorySlug(c.slug)}
-                  style={[styles.cat, selected && styles.catSelected]}
-                >
-                  <CategoryIcon icon={c.icon} size={28} />
-                  <AppText variant="small" style={{ fontWeight: '600', color: selected ? colors.goldSoft : colors.text }}>
-                    {c.name}
-                  </AppText>
-                </PressableScale>
-              );
-            })}
-          </View>
-          {errors.categorySlug ? <AppText variant="caption" tone="danger">{errors.categorySlug}</AppText> : null}
-
-          <AppText variant="overline" tone="gold" uppercase style={styles.label}>
-            2 · Başlık
+          <AppText variant="small" style={styles.label}>
+            Başlık
           </AppText>
           <TextInput
             value={title}
@@ -96,8 +72,8 @@ export default function CreateTopicScreen() {
             <AppText variant="caption" tone="subtle">{title.trim().length}/{TOPIC_TITLE_MAX}</AppText>
           </View>
 
-          <AppText variant="overline" tone="gold" uppercase style={styles.label}>
-            3 · Mesaj
+          <AppText variant="small" style={styles.label}>
+            Mesaj
           </AppText>
           <TextInput
             value={body}
@@ -114,6 +90,50 @@ export default function CreateTopicScreen() {
             <AppText variant="caption" tone="danger">{errors.body ?? ''}</AppText>
             <AppText variant="caption" tone="subtle">{body.trim().length}</AppText>
           </View>
+
+          <AppText variant="small" style={styles.label}>
+            Kategori
+          </AppText>
+          {categorySlug && !pickCategory ? (
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel={`Kategori: ${CATEGORY_BY_SLUG[categorySlug].name}. Değiştir`}
+              onPress={() => setPickCategory(true)}
+              style={[styles.cat, styles.catSelected, { alignSelf: 'flex-start' }]}
+            >
+              <CategoryIcon icon={CATEGORY_BY_SLUG[categorySlug].icon} size={28} />
+              <AppText variant="small" style={{ fontWeight: '600', color: colors.goldSoft }}>
+                {CATEGORY_BY_SLUG[categorySlug].name}
+              </AppText>
+              <AppText variant="caption" tone="subtle">
+                Değiştir
+              </AppText>
+            </PressableScale>
+          ) : (
+            <View style={styles.cats} accessibilityRole="radiogroup">
+              {DEFAULT_CATEGORIES.map((c) => {
+                const selected = c.slug === categorySlug;
+                return (
+                  <PressableScale
+                    key={c.slug}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: selected }}
+                    accessibilityLabel={c.name}
+                    onPress={() => {
+                      setCategorySlug(c.slug);
+                      setPickCategory(false);
+                    }}
+                    style={[styles.catSmall, selected && styles.catSelected]}
+                  >
+                    <AppText variant="caption" style={{ fontWeight: '700', color: selected ? colors.goldSoft : colors.textMuted }}>
+                      {c.name}
+                    </AppText>
+                  </PressableScale>
+                );
+              })}
+            </View>
+          )}
+          {errors.categorySlug ? <AppText variant="caption" tone="danger">{errors.categorySlug}</AppText> : null}
 
           <PollEditor value={poll} onChange={setPoll} />
 
@@ -142,7 +162,16 @@ export default function CreateTopicScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  label: { marginTop: spacing.xxl, marginBottom: spacing.sm },
+  label: { marginTop: spacing.xl, marginBottom: spacing.sm, fontWeight: '600', color: colors.textMuted },
+  catSmall: {
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
   cats: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   cat: {
     flexDirection: 'row',

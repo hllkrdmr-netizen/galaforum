@@ -140,11 +140,12 @@ export function CountdownBlocks({ kickoffAt }: { kickoffAt: string }) {
       </AppText>
     );
   }
+  // More than a day away: seconds add motion without information.
   const parts: Array<[number, string]> = [
     [c.days, 'Gün'],
     [c.hours, 'Saat'],
     [c.minutes, 'Dakika'],
-    [c.seconds, 'Saniye'],
+    ...(c.days === 0 ? ([[c.seconds, 'Saniye']] as Array<[number, string]>) : []),
   ];
   return (
     <View
@@ -208,6 +209,16 @@ export function NextMatchCard({ match }: { match: Match }) {
           <Button label="Tartışmaya Katıl" variant="secondary" icon="chatbubbles-outline" onPress={() => router.push(`/konu/${match.topicId}`)} />
         ) : null}
       </View>
+      <PressableScale
+        accessibilityRole="link"
+        onPress={() => router.push({ pathname: '/ilk-11', params: { mac: match.id } })}
+        style={styles.textLink}
+      >
+        <Ionicons name="grid-outline" size={14} color={colors.gold} />
+        <AppText variant="small" tone="gold" style={{ fontWeight: '700' }}>
+          Bu maç için ilk 11’ini kur
+        </AppText>
+      </PressableScale>
     </View>
   );
 }
@@ -382,6 +393,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,90,78,0.45)',
   },
   enter: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  textLink: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, alignSelf: 'flex-start' },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.lg },
   divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   date: { width: 52, alignItems: 'center' },

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import {
@@ -70,6 +71,13 @@ export default function SearchScreen() {
   const total = r ? r.topics.length + r.posts.length + r.categories.length + r.users.length : 0;
 
   const setParam = (patch: Partial<Params>) => router.setParams(patch as Record<string, string>);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const active: Array<{ key: keyof Params; label: string }> = [
+    ...(sort !== 'relevance' ? [{ key: 'sirala' as const, label: SORTS.find((x) => x.value === sort)!.label }] : []),
+    ...(since !== 'all' ? [{ key: 'zaman' as const, label: SINCES.find((x) => x.value === since)!.label }] : []),
+    ...(category ? [{ key: 'kategori' as const, label: CATEGORY_BY_SLUG[category].name }] : []),
+    ...(author ? [{ key: 'uye' as const, label: `@${author}` }] : []),
+  ];
 
   return (
     <View style={styles.screen}>
@@ -78,46 +86,69 @@ export default function SearchScreen() {
         <Container style={{ paddingTop: spacing.xl, gap: spacing.md }}>
           <SearchBar key={query} initialValue={query} autoFocus={!enabled} onSubmit={(v) => setParam({ q: v })} />
 
-          {author ? (
-            <View style={styles.row}>
-              <AppText variant="caption" tone="subtle">
-                Üye:
+          <View style={styles.row}>
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityState={{ expanded: filtersOpen }}
+              accessibilityLabel={`Filtrele${active.length ? `, ${active.length} filtre etkin` : ''}`}
+              onPress={() => setFiltersOpen((o) => !o)}
+              style={[styles.chip, (filtersOpen || active.length > 0) && styles.chipOn]}
+            >
+              <Ionicons name="options-outline" size={14} color={active.length ? colors.goldSoft : colors.textMuted} />
+              <AppText variant="caption" style={{ fontWeight: '700', color: active.length ? colors.goldSoft : colors.textMuted }}>
+                Filtrele{active.length ? ` (${active.length})` : ''}
               </AppText>
+            </PressableScale>
+            {active.map((f) => (
               <PressableScale
+                key={f.key}
                 accessibilityRole="button"
-                accessibilityLabel={`${author} filtresini kaldır`}
-                onPress={() => setParam({ uye: '' })}
-                style={[styles.chip, styles.chipOn]}
+                accessibilityLabel={`${f.label} filtresini kaldır`}
+                onPress={() => setParam({ [f.key]: '' })}
+                style={styles.chip}
               >
-                <AppText variant="caption" style={{ fontWeight: '700', color: colors.goldSoft }}>
-                  @{author}
+                <AppText variant="caption" style={{ fontWeight: '700', color: colors.textMuted }}>
+                  {f.label}
                 </AppText>
-                <Ionicons name="close" size={14} color={colors.goldSoft} />
+                <Ionicons name="close" size={13} color={colors.textSubtle} />
               </PressableScale>
+            ))}
+          </View>
+
+          {filtersOpen ? (
+            <View style={styles.panel}>
+              <AppText variant="caption" tone="subtle" style={styles.groupLabel}>
+                Sıralama
+              </AppText>
+              <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel="Sıralama">
+                {SORTS.map((x) => (
+                  <Chip key={x.value} label={x.label} selected={sort === x.value} onPress={() => setParam({ sirala: x.value })} />
+                ))}
+              </View>
+              <AppText variant="caption" tone="subtle" style={styles.groupLabel}>
+                Tarih
+              </AppText>
+              <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel="Tarih">
+                {SINCES.map((x) => (
+                  <Chip key={x.value} label={x.label} selected={since === x.value} onPress={() => setParam({ zaman: x.value })} />
+                ))}
+              </View>
+              <AppText variant="caption" tone="subtle" style={styles.groupLabel}>
+                Kategori
+              </AppText>
+              <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel="Kategori">
+                <Chip label="Tümü" selected={!category} onPress={() => setParam({ kategori: '' })} />
+                {DEFAULT_CATEGORIES.map((c) => (
+                  <Chip key={c.slug} label={c.name} selected={category === c.slug} onPress={() => setParam({ kategori: c.slug })} />
+                ))}
+              </View>
             </View>
           ) : null}
-
-          <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel="Sıralama">
-            {SORTS.map((s) => (
-              <Chip key={s.value} label={s.label} selected={sort === s.value} onPress={() => setParam({ sirala: s.value })} />
-            ))}
-          </View>
-          <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel="Tarih">
-            {SINCES.map((s) => (
-              <Chip key={s.value} label={s.label} selected={since === s.value} onPress={() => setParam({ zaman: s.value })} />
-            ))}
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row} accessibilityRole="radiogroup" accessibilityLabel="Kategori">
-            <Chip label="Tüm kategoriler" selected={!category} onPress={() => setParam({ kategori: '' })} />
-            {DEFAULT_CATEGORIES.map((c) => (
-              <Chip key={c.slug} label={c.name} selected={category === c.slug} onPress={() => setParam({ kategori: c.slug })} />
-            ))}
-          </ScrollView>
 
           {enabled && r ? (
             <AppText variant="caption" tone="subtle">
               {query ? `“${query}” için ` : ''}
-              {total} sonuç · konu başlıkları, mesajlar{author || category ? '' : ', kategoriler ve üyeler'}
+              {total} sonuç
             </AppText>
           ) : null}
         </Container>
@@ -234,8 +265,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   chipOn: { borderColor: colors.gold, backgroundColor: 'rgba(217,164,65,0.12)' },
-  group: { borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, overflow: 'hidden' },
-  postRow: { padding: spacing.lg, gap: 4, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  panel: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surface },
+  groupLabel: { fontWeight: '700', marginTop: spacing.xs },
+  group: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  postRow: { paddingVertical: spacing.md, paddingHorizontal: spacing.md, gap: 2, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   person: {
     flexDirection: 'row',
     alignItems: 'center',

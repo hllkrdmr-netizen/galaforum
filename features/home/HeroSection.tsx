@@ -6,21 +6,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText, Button, IconButton, Pill } from '../../components/ui';
 import { colors, fonts, gradients, layout, spacing } from '../../constants/theme';
 import { useResponsive } from '../../hooks/useResponsive';
-import { formatCount } from '../../lib/format';
-import type { ForumOverview } from '../../types/forum';
 import { SearchBar } from '../forum/SearchBar';
 
 const LION = require('../../assets/images/lion-hero-realistic.png');
 
-export function HeroSection({
-  overview,
-  isDemo,
-  onBrowseCategories,
-}: {
-  overview?: ForumOverview;
-  isDemo: boolean;
-  onBrowseCategories?: () => void;
-}) {
+export function HeroSection({ isDemo }: { isDemo: boolean }) {
   const insets = useSafeAreaInsets();
   const { width, isWide, isDesktop, gutter } = useResponsive();
 
@@ -107,8 +97,7 @@ export function HeroSection({
             </AppText>
           </View>
           <AppText variant="body" tone="muted" style={[styles.lead, isDesktop && { fontSize: 17, lineHeight: 26 }]}>
-            Maç analizinden transfer gündemine, tribün hatıralarından kulüp tarihine — Galatasaray taraftarının
-            derinlikli tartışma adresi.
+            Galatasaray taraftarının tartışma adresi.
           </AppText>
 
           <View style={styles.search}>
@@ -123,22 +112,7 @@ export function HeroSection({
               onPress={() => router.push('/konu-ac')}
               accessibilityHint="Yeni bir tartışma başlatır"
             />
-            {onBrowseCategories ? (
-              <Button label="Kategoriler" variant="secondary" size="lg" icon="grid-outline" onPress={onBrowseCategories} />
-            ) : null}
           </View>
-
-          {overview ? (
-            <AppText variant="caption" tone="muted" style={styles.stats}>
-              <AppText variant="caption" tone="default" style={styles.statNum}>{formatCount(overview.topicCount)}</AppText> konu
-              {'   ·   '}
-              <AppText variant="caption" tone="default" style={styles.statNum}>{formatCount(overview.postCount)}</AppText> mesaj
-              {'   ·   '}
-              <AppText variant="caption" tone="default" style={styles.statNum}>{formatCount(overview.memberCount)}</AppText> aktif üye
-            </AppText>
-          ) : (
-            <View style={{ height: 16 }} />
-          )}
         </View>
       </View>
     </View>
@@ -147,8 +121,7 @@ export function HeroSection({
 
 const styles = StyleSheet.create({
   hero: { width: '100%', overflow: 'hidden', backgroundColor: colors.bg },
-  beam: { position: 'absolute', top: -80, width: 90, height: 520 },
-  stage: { width: '100%', alignSelf: 'center', paddingBottom: spacing.huge, minHeight: 520, zIndex: 2 },
+  stage: { width: '100%', alignSelf: 'center', paddingBottom: spacing.xxxl, minHeight: 460, zIndex: 2 },
   lionWrap: { position: 'absolute' },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 2 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -167,9 +140,7 @@ const styles = StyleSheet.create({
   taglineRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.sm },
   taglineBar: { width: 28, height: 2, backgroundColor: colors.gold, borderRadius: 1 },
   lead: { marginTop: spacing.lg, maxWidth: 520 },
-  search: { marginTop: spacing.xxl, maxWidth: 520 },
+  search: { marginTop: spacing.xl, maxWidth: 520 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.lg },
-  stats: { marginTop: spacing.xl, letterSpacing: 0.3 },
-  statNum: { fontWeight: '700' },
   bottomFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 90 },
 });

@@ -44,7 +44,9 @@ export default function DahaTab() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingTop: insets.top + spacing.xxl, paddingBottom: 140 }}>
       <Container>
-        <SectionHeader overline="Hesap" title="Daha" />
+        <AppText variant="displaySm" accessibilityRole="header" style={{ marginBottom: spacing.lg }}>
+          Daha
+        </AppText>
         <View style={styles.group}>
           {status === 'signedIn' && profile ? (
             <>
@@ -62,21 +64,22 @@ export default function DahaTab() {
         </View>
 
         <View style={{ marginTop: spacing.xxxl }}>
-          <SectionHeader overline="Forum" title="Tüm kategoriler" />
+          <SectionHeader title="Kategoriler" />
         </View>
-        <View style={styles.grid}>
+        <View style={styles.list}>
           {DEFAULT_CATEGORIES.map((c) => (
             <PressableScale
               key={c.slug}
               accessibilityRole="link"
               accessibilityLabel={c.name}
               onPress={() => router.push(`/kategori/${c.slug}`)}
-              style={({ hovered }) => [styles.chip, hovered && styles.hovered]}
+              style={({ hovered }) => [styles.catRow, hovered && styles.hovered]}
             >
               <CategoryIcon icon={c.icon} size={32} />
-              <AppText variant="small" style={{ fontWeight: '600', flexShrink: 1 }} numberOfLines={1}>
+              <AppText variant="bodyStrong" style={{ flex: 1 }} numberOfLines={1}>
                 {c.name}
               </AppText>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
             </PressableScale>
           ))}
         </View>
@@ -99,6 +102,16 @@ export default function DahaTab() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
+  list: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  catRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    minHeight: 52,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
   group: { borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, overflow: 'hidden' },
   row: {
     flexDirection: 'row',
