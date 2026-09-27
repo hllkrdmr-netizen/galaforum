@@ -38,9 +38,9 @@ test('username rules mirror the database constraint and reserve tombstones', () 
 });
 
 test('sign-up form collects every error', () => {
-  const e = validateSignUp({ username: 'x', email: 'bad', password: 'short', passwordConfirm: 'other' });
-  assert.deepEqual(Object.keys(e).sort(), ['email', 'password', 'passwordConfirm', 'username']);
-  assert.deepEqual(validateSignUp({ username: 'gs_1905', email: 'a@b.co', password: 'cimbom1905', passwordConfirm: 'cimbom1905' }), {});
+  const e = validateSignUp({ username: 'x', email: 'bad', password: 'short', passwordConfirm: 'other', acceptedTerms: false });
+  assert.deepEqual(Object.keys(e).sort(), ['acceptedTerms', 'email', 'password', 'passwordConfirm', 'username']);
+  assert.deepEqual(validateSignUp({ username: 'gs_1905', email: 'a@b.co', password: 'cimbom1905', passwordConfirm: 'cimbom1905', acceptedTerms: true }), {});
 });
 
 test('auth errors map to Turkish messages without leaking account existence', () => {

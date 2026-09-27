@@ -2,7 +2,7 @@
   "expo": {
     "name": "GalaForum",
     "slug": "galaforum",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "default",
     "scheme": "galaforum",
     "userInterfaceStyle": "dark",
@@ -23,14 +23,19 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.hllkrdmr.galaforum"
+      "bundleIdentifier": "com.hllkrdmr.galaforum",
+      "buildNumber": "1",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.hllkrdmr.galaforum",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#12050A"
-      }
+      },
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",

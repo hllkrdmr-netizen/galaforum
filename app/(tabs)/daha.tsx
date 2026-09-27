@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import type { Href } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -11,6 +12,7 @@ import { CategoryIcon } from '../../features/forum/CategoryIcon';
 import { useOpenReportCount, useStaff } from '../../hooks/useModeration';
 import { useUnreadNotifications } from '../../hooks/useNotifications';
 import { useAuth } from '../../lib/auth/AuthProvider';
+import { LEGAL_PAGES } from '../../lib/legal';
 import { unreadLabel } from '../../lib/notifications';
 import { forum } from '../../services/forum';
 
@@ -111,12 +113,21 @@ export default function DahaTab() {
           ))}
         </View>
 
+        <View style={{ marginTop: spacing.xxxl }}>
+          <SectionHeader title="Bilgi" />
+        </View>
+        <View style={styles.group}>
+          {LEGAL_PAGES.map((p) => (
+            <MenuRow key={p.slug} icon={p.icon} label={p.title} href={`/bilgi/${p.slug}`} />
+          ))}
+        </View>
+
         <View style={styles.about}>
           <AppText variant="tagline" tone="gold">
             DAİMA GALATASARAY
           </AppText>
           <AppText variant="caption" tone="subtle" style={{ marginTop: spacing.sm }}>
-            GalaForum v0.1 · {forum.mode === 'demo' ? 'Demo modu (örnek içerik)' : 'Canlı veri'}
+            GalaForum v{Constants.expoConfig?.version ?? ''} · {forum.mode === 'demo' ? 'Demo modu (örnek içerik)' : 'Canlı veri'}
           </AppText>
           <AppText variant="caption" tone="subtle">
             Bağımsız taraftar platformu; Galatasaray Spor Kulübü’nün resmi kanalı değildir.

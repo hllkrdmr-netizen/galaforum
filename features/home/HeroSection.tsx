@@ -8,8 +8,8 @@ import { colors, fonts, gradients, layout, spacing } from '../../constants/theme
 import { useResponsive } from '../../hooks/useResponsive';
 import { SearchBar } from '../forum/SearchBar';
 import { NotificationBell } from '../notifications/NotificationBell';
+import { LION } from './lionAsset';
 
-const LION = require('../../assets/images/lion-hero-realistic.png');
 
 export function HeroSection({ isDemo }: { isDemo: boolean }) {
   const insets = useSafeAreaInsets();

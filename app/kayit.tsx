@@ -1,7 +1,10 @@
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { AppText, Button, PressableScale, TextField } from '../components/ui';
+import { colors, radius, spacing } from '../constants/theme';
 import { AuthLayout, Notice } from '../features/auth/AuthLayout';
 import { useAuth } from '../lib/auth/AuthProvider';
 import { AuthError, PASSWORD_MIN, validateSignUp } from '../lib/auth/validation';
@@ -9,7 +12,7 @@ import type { SignUpErrors, SignUpInput } from '../lib/auth/validation';
 
 export default function SignUpScreen() {
   const { status, signUp, resendVerification } = useAuth();
-  const [form, setForm] = useState<SignUpInput>({ username: '', email: '', password: '', passwordConfirm: '' });
+  const [form, setForm] = useState<SignUpInput>({ username: '', email: '', password: '', passwordConfirm: '', acceptedTerms: false });
   const [errors, setErrors] = useState<SignUpErrors>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -20,7 +23,7 @@ export default function SignUpScreen() {
     if (status === 'signedIn') router.replace('/hesap');
   }, [status]);
 
-  const set = (key: keyof SignUpInput) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
+  const set = (key: Exclude<keyof SignUpInput, 'acceptedTerms'>) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
 
   const submit = async () => {
     const v = validateSignUp(form);
@@ -137,11 +140,56 @@ export default function SignUpScreen() {
         editable={!disabled}
         onSubmitEditing={() => void submit()}
       />
-      <AppText variant="caption" tone="subtle">
-        Üye olarak forum kurallarına uymayı kabul edersin: saygılı dil, kaynaklı bilgi, kişisel saldırı yok.
-      </AppText>
+      <PressableScale
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: form.acceptedTerms, disabled }}
+        accessibilityLabel="Topluluk kurallarını, kullanım koşullarını ve gizlilik metnini okudum, kabul ediyorum"
+        disabled={disabled}
+        onPress={() => setForm((f) => ({ ...f, acceptedTerms: !f.acceptedTerms }))}
+        style={styles.terms}
+      >
+        <View style={[styles.box, form.acceptedTerms && styles.boxOn, errors.acceptedTerms ? styles.boxError : null]}>
+          {form.acceptedTerms ? <Ionicons name="checkmark" size={16} color={colors.textOnGold} /> : null}
+        </View>
+        <AppText variant="small" tone="muted" style={{ flex: 1 }}>
+          <AppText variant="small" tone="gold" style={styles.link} onPress={() => router.push('/bilgi/kurallar')}>
+            Topluluk kurallarını
+          </AppText>
+          {', '}
+          <AppText variant="small" tone="gold" style={styles.link} onPress={() => router.push('/bilgi/kosullar')}>
+            kullanım koşullarını
+          </AppText>
+          {' ve '}
+          <AppText variant="small" tone="gold" style={styles.link} onPress={() => router.push('/bilgi/gizlilik')}>
+            gizlilik metnini
+          </AppText>
+          {' okudum, kabul ediyorum. Hakaret, nefret söylemi ve kaynaksız iddialar kaldırılır.'}
+        </AppText>
+      </PressableScale>
+      {errors.acceptedTerms ? (
+        <AppText variant="small" tone="danger">
+          {errors.acceptedTerms}
+        </AppText>
+      ) : null}
       {error ? <Notice tone="error">{error}</Notice> : null}
       <Button label="Hesap oluştur" icon="person-add-outline" size="lg" loading={busy} disabled={disabled} onPress={() => void submit()} />
     </AuthLayout>
   );
 }
+
+const styles = StyleSheet.create({
+  terms: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, paddingVertical: spacing.xs, minHeight: 44 },
+  box: {
+    width: 24,
+    height: 24,
+    marginTop: 1,
+    borderRadius: radius.sm - 2,
+    borderWidth: 1.5,
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  boxOn: { backgroundColor: colors.gold, borderColor: colors.gold },
+  boxError: { borderColor: colors.danger },
+  link: { fontWeight: '700', textDecorationLine: 'underline' },
+});

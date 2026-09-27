@@ -21,6 +21,9 @@
   Native push delivery needs `expo-notifications` and a worker; see `PHASE7.md`.
 - Phase 8: moderation — report queue, post removal/restore, topic pin/lock/move/hide, mutes and bans enforced by
   database triggers, admin role management, append-only audit log, member blocking, staff notices. See `PHASE8.md`.
+- Phase 9: release preparation — crash screen, legal pages (rules, terms, privacy/KVKK) with consent at sign-up,
+  schema release gate, WCAG contrast and config tests, web smoke test, WebP hero on web, version 1.0.0, EAS
+  profiles. See `RELEASE.md`.
 
 ## Known limitations
 - **Dependencies not yet added:** `@tanstack/react-query`, `zustand`, `eslint`/`eslint-config-expo`,
@@ -35,5 +38,6 @@
   dropped in via `expo-font` later.
 - Demo interactions are session-only; accounts are disabled in demo mode.
 
-## Next
-- Phase 9 — QA/release
+## Next (after 1.0)
+- Native push delivery (expo-notifications + worker), crash reporting, ESLint and TanStack Query once the
+  package registry is reachable, jump-to-post links, search pagination, profanity filter.

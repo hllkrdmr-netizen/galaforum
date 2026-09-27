@@ -7,6 +7,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors } from '../constants/theme';
 import { AuthProvider } from '../lib/auth/AuthProvider';
 
+// Expo Router renders this when a screen throws while rendering.
+export { AppErrorBoundary as ErrorBoundary } from '../features/app/AppErrorBoundary';
+
 export default function RootLayout() {
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') document.documentElement.lang = 'tr';

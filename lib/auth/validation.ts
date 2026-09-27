@@ -60,6 +60,8 @@ export interface SignUpInput {
   email: string;
   password: string;
   passwordConfirm: string;
+  /** Topluluk kuralları, kullanım koşulları ve gizlilik metni onayı (store requirement for UGC apps). */
+  acceptedTerms: boolean;
 }
 
 export type SignUpErrors = Partial<Record<keyof SignUpInput, string>>;
@@ -73,6 +75,7 @@ export function validateSignUp(input: SignUpInput): SignUpErrors {
   const p = validatePassword(input.password);
   if (p) errors.password = p;
   if (input.password !== input.passwordConfirm) errors.passwordConfirm = 'Şifreler eşleşmiyor.';
+  if (!input.acceptedTerms) errors.acceptedTerms = 'Devam etmek için kuralları ve koşulları kabul etmelisin.';
   return errors;
 }
 

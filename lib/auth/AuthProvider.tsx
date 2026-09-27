@@ -8,6 +8,7 @@ import { invalidateQueries } from '../../hooks/useForumQuery';
 import type { AuthorSummary, UserRole } from '../../types/forum';
 import { notifications } from '../../services/notifications';
 import { disablePushOnThisDevice } from '../push';
+import { LEGAL_VERSION } from '../legal';
 import { getSupabase } from '../supabase';
 import {
   AuthError,
@@ -141,7 +142,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data, error } = await client.auth.signUp({
           email: normalizeEmail(input.email),
           password: input.password,
-          options: { data: { username }, emailRedirectTo: authRedirectUrl() },
+          // The accepted legal version is kept in the auth user's metadata as the record of consent.
+          options: { data: { username, terms_version: LEGAL_VERSION }, emailRedirectTo: authRedirectUrl() },
         });
         if (error) throw mapAuthError(error);
         // With e-mail confirmation enabled Supabase returns no session until the link is opened.

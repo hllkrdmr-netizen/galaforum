@@ -119,8 +119,9 @@ function Toggle({ label, value, onChange }: { label: string; value: boolean; onC
       onValueChange={onChange}
       trackColor={{ false: 'rgba(245,239,230,0.14)', true: colors.wineBright }}
       thumbColor={value ? colors.goldSoft : '#C9BFB3'}
-      /* react-native-web colours the "on" thumb separately (defaults to teal). */
-      {...(Platform.OS === 'web' ? ({ activeThumbColor: colors.goldSoft } as object) : null)}
+      /* react-native-web colours the "on" thumb separately (defaults to teal) and draws a 20 px switch;
+         enlarge it to a 28 px target (WCAG 2.2 target size). */
+      {...(Platform.OS === 'web' ? ({ activeThumbColor: colors.goldSoft, style: { height: 28, width: 48 } } as object) : null)}
     />
   );
 }
