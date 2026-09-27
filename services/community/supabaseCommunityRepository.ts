@@ -34,6 +34,8 @@ const MESSAGES: Array<[string, string]> = [
   ['invalid_date', 'Buluşma tarihi 10 dakika ile 180 gün sonrası arasında olmalı.'],
   ['self_follow', 'Kendini takip edemezsin.'],
   ['not_allowed', 'Bu işlem için yetkin yok.'],
+  ['muted', 'Hesabın susturulduğu için şu an yazamazsın.'],
+  ['banned', 'Hesabın yasaklı olduğu için bu işlemi yapamazsın.'],
 ];
 
 function fail(error: { message: string; code?: string }, fallback: string): never {

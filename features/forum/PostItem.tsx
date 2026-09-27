@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import { forum } from '../../services/forum';
 import { invalidateQueries } from '../../hooks/useForumQuery';
 import { interactionStyles } from './Interactions';
+import { RemovePostBox, RemovePostMenuItem } from '../moderation/PostModeration';
+import { useStaff } from '../../hooks/useModeration';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { AppText, Avatar, Button, Pill, PressableScale } from '../../components/ui';
@@ -58,6 +60,8 @@ function Action({ icon, label, a11y, onPress, disabled, active }: {
 export function PostItem({ post, index, onQuote }: { post: Post; index: number; onQuote?: (post: Post) => void }) {
   const [menu, setMenu] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const { isStaff } = useStaff();
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
@@ -130,8 +134,10 @@ export function PostItem({ post, index, onQuote }: { post: Post; index: number; 
             <Ionicons name="flag-outline" size={16} color={colors.textMuted} />
             <AppText variant="small">Bildir</AppText>
           </PressableScale>
+          {isStaff && !post.isOpeningPost ? <RemovePostMenuItem onPress={() => { setMenu(false); setRemoving(true); }} /> : null}
         </View>
       ) : null}
+      {removing ? <RemovePostBox post={post} onClose={() => setRemoving(false)} /> : null}
       {reporting && <View style={interactionStyles.box}>
         <TextInput accessibilityLabel="Bildirim gerekçesi" value={reason} onChangeText={setReason} maxLength={1000} multiline placeholder="Bildirim gerekçesi (en az 5 karakter)" placeholderTextColor={colors.textSubtle} style={interactionStyles.input} />
         <View style={interactionStyles.actions}>

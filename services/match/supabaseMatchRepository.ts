@@ -62,6 +62,7 @@ function fail(error: { message: string; code?: string }, fallback: string): neve
   if (/fetch|network|timeout/i.test(error.message)) throw new ForumError('Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene.', 'network');
   if (error.code === '28000') throw new ForumError('Bu işlem için giriş yapmalısın.', 'auth_required');
   if (error.message.includes('rate_limited')) throw new ForumError('Biraz yavaş: 3 saniyede bir tepki verebilirsin.', 'validation');
+  if (error.message.includes('banned')) throw new ForumError('Hesabın yasaklı olduğu için bu işlemi yapamazsın.', 'validation');
   if (error.message.includes('match_not_live')) throw new ForumError('Tepkiler yalnızca maç sırasında açık.', 'validation');
   throw new ForumError(fallback, 'unknown');
 }

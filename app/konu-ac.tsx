@@ -8,6 +8,8 @@ import { AppText, Button, Container, PressableScale, ScreenHeader } from '../com
 import { CATEGORY_BY_SLUG, DEFAULT_CATEGORIES } from '../constants/categories';
 import { colors, fonts, radius, spacing } from '../constants/theme';
 import { SignInPrompt } from '../features/auth/SignInPrompt';
+import { RestrictionNotice } from '../features/moderation/ModParts';
+import { useMyRestriction } from '../hooks/useModeration';
 import { CategoryIcon } from '../features/forum/CategoryIcon';
 import { invalidateQueries } from '../hooks/useForumQuery';
 import { POST_BODY_MAX, TOPIC_TITLE_MAX, hasErrors, validateTopicInput } from '../lib/validation';
@@ -18,6 +20,7 @@ const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object
 
 export default function CreateTopicScreen() {
   const params = useLocalSearchParams<{ kategori?: string }>();
+  const restriction = useMyRestriction();
   const [categorySlug, setCategorySlug] = useState(params.kategori && CATEGORY_BY_SLUG[params.kategori] ? params.kategori : '');
   const [title, setTitle] = useState('');
   const [pickCategory, setPickCategory] = useState(false);
@@ -138,6 +141,7 @@ export default function CreateTopicScreen() {
           <PollEditor value={poll} onChange={setPoll} />
 
           <SignInPrompt message="Konu açmak için giriş yapmalısın." />
+          <RestrictionNotice restriction={restriction} />
 
           {submitError ? (
             <View style={styles.alert} accessibilityRole="alert">

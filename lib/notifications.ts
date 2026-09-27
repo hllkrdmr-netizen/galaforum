@@ -27,7 +27,7 @@ export const NOTIFICATION_GROUPS: GroupInfo[] = [
   { group: 'badge', label: 'Rozetler', hint: 'Yeni bir rozet kazandığında', icon: 'ribbon-outline' },
 ];
 
-const PUSH_ON_BY_DEFAULT: ReadonlySet<NotificationGroup> = new Set(['reply', 'quote', 'mention', 'follow', 'meetup', 'match']);
+const PUSH_ON_BY_DEFAULT: ReadonlySet<NotificationGroup> = new Set(['reply', 'quote', 'mention', 'follow', 'meetup', 'match', 'moderation']);
 
 export function groupOf(kind: NotificationKind): NotificationGroup {
   if (kind === 'meetup_join' || kind === 'meetup_cancelled') return 'meetup';
@@ -166,6 +166,41 @@ export function describeNotification(n: AppNotification, me?: string | null): No
       return { icon: 'flag', tone: 'muted', lead: 'Maç sona erdi:', action: '', subject: matchScoreLine(d.match_title, d.home_score, d.away_score), preview: d.competition ?? '', href: n.matchId ? `/mac/${n.matchId}` : topicHref };
     case 'badge':
       return { icon: 'ribbon', tone: 'gold', lead: 'Yeni rozet kazandın:', action: '', subject: d.badge_name ?? '', preview: '', href: me ? `/uye/${me}` : '/hesap' };
+    case 'moderation':
+      return describeModeration(n);
+  }
+}
+
+const ROLE_NAMES: Record<string, string> = { user: 'Üye', verified: 'Onaylı Üye', moderator: 'Moderatör', admin: 'Yönetici' };
+
+function untilText(iso: string | null | undefined): string {
+  if (!iso) return 'süresiz';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${hh}:${mm}’e kadar`;
+}
+
+/** Staff notices: shown as coming from "GalaForum ekibi", never from the individual moderator. */
+function describeModeration(n: AppNotification): NotificationView {
+  const d = n.data;
+  const reason = d.reason ? `Gerekçe: ${d.reason}` : '';
+  switch (d.action) {
+    case 'post_removed':
+      return { icon: 'shield', tone: 'muted', lead: 'Mesajın kaldırıldı:', action: '', subject: d.topic_title ?? '', preview: reason, href: n.topicId ? `/konu/${n.topicId}` : null };
+    case 'topic_hidden':
+      return { icon: 'shield', tone: 'muted', lead: 'Konun yayından kaldırıldı:', action: '', subject: d.topic_title ?? '', preview: reason, href: null };
+    case 'muted':
+      return { icon: 'volume-mute', tone: 'wine', lead: 'Hesabın susturuldu', action: `(${untilText(d.ends_at)})`, subject: '', preview: reason, href: '/hesap' };
+    case 'banned':
+      return { icon: 'ban', tone: 'wine', lead: 'Hesabın yasaklandı', action: `(${untilText(d.ends_at)})`, subject: '', preview: reason, href: '/hesap' };
+    case 'sanction_revoked':
+      return { icon: 'shield-checkmark', tone: 'gold', lead: 'Hesabındaki kısıtlama kaldırıldı.', action: '', subject: '', preview: '', href: '/hesap' };
+    case 'role_changed':
+      return { icon: 'ribbon', tone: 'gold', lead: 'Rolün güncellendi:', action: '', subject: ROLE_NAMES[d.role ?? ''] ?? d.role ?? '', preview: '', href: '/hesap' };
+    default:
+      return { icon: 'shield', tone: 'muted', lead: 'GalaForum ekibinden bir bildirim', action: '', subject: '', preview: reason, href: null };
   }
 }
 

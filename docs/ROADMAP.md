@@ -19,6 +19,8 @@
 - Phase 7: notifications — in-app inbox (grouped replies/likes, day sections, unread filter, mark read), unread bell
   with realtime, per-type in-app/push preferences, push token registry and push outbox for a server worker.
   Native push delivery needs `expo-notifications` and a worker; see `PHASE7.md`.
+- Phase 8: moderation — report queue, post removal/restore, topic pin/lock/move/hide, mutes and bans enforced by
+  database triggers, admin role management, append-only audit log, member blocking, staff notices. See `PHASE8.md`.
 
 ## Known limitations
 - **Dependencies not yet added:** `@tanstack/react-query`, `zustand`, `eslint`/`eslint-config-expo`,
@@ -34,5 +36,4 @@
 - Demo interactions are session-only; accounts are disabled in demo mode.
 
 ## Next
-- Phase 8 — Moderation roles, tools and audit logs
 - Phase 9 — QA/release

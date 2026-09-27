@@ -121,6 +121,9 @@ export function createSupabaseRepository(sb: SupabaseClient): ForumRepository {
     if (!session.session) throw new ForumError('Bu işlem için giriş yapmalısın.', 'auth_required');
     const { data, error } = await sb.rpc(name, args);
     if (error) {
+      // Phase 8: active mute/ban (enforced by database triggers).
+      if (error.message.includes('muted')) throw new ForumError('Hesabın susturulduğu için şu an yazamazsın.', 'validation');
+      if (error.message.includes('banned')) throw new ForumError('Hesabın yasaklı olduğu için bu işlemi yapamazsın.', 'validation');
       if (error.code === '22023') throw new ForumError('Geçersiz işlem veya kilitli konu.', 'validation');
       if (error.code === 'P0002') throw new ForumError('Kayıt bulunamadı.', 'not_found');
       fail(error, 'İşlem tamamlanamadı. Lütfen tekrar dene.');

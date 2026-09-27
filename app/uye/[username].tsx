@@ -26,6 +26,8 @@ import { community } from '../../services/community';
 import { DEMO_GUEST } from '../../services/forum/demoRepository';
 import { formatCount, formatRelativeTime } from '../../lib/format';
 import { forum } from '../../services/forum';
+import { BlockButton } from '../../features/moderation/BlockButton';
+import { useStaff } from '../../hooks/useModeration';
 
 const ROLE_LABEL = { user: null, verified: 'Onaylı Üye', moderator: 'Moderatör', admin: 'Yönetici' } as const;
 const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
@@ -41,6 +43,7 @@ export default function ProfileScreen() {
   const profile = useForumQuery(`forum:profile:${username}`, () => forum.getProfile(username));
   const extras = useForumQuery(`community:profile:${username}`, () => community.getProfileExtras(username));
   const { toggle, busy, error: followError } = useFollows();
+  const { isStaff } = useStaff();
   const p = profile.data;
   const x = extras.data;
   const myId = community.mode === 'demo' ? DEMO_GUEST.id : me?.id;
@@ -136,6 +139,10 @@ export default function ProfileScreen() {
                 {isMe ? (
                   <Button label="Hesap ayarları" variant="ghost" icon="settings-outline" onPress={() => router.push('/hesap')} />
                 ) : null}
+                {!isMe && isStaff ? (
+                  <Button label="Moderasyon" variant="ghost" icon="shield-half-outline" onPress={() => router.push(`/moderasyon/uye/${p.author.username}`)} />
+                ) : null}
+                {!isMe ? <BlockButton userId={p.author.id} username={p.author.username} onChange={() => void extras.refetch()} /> : null}
               </View>
 
               {followError ? (

@@ -13,10 +13,22 @@ export type NotificationKind =
   | 'match_start'
   | 'match_goal'
   | 'match_end'
-  | 'badge';
+  | 'badge'
+  | 'moderation';
 
 /** What the member toggles in settings (several kinds can share a group). */
-export type NotificationGroup = 'reply' | 'quote' | 'mention' | 'like' | 'follow' | 'category_topic' | 'meetup' | 'match' | 'badge';
+export type NotificationGroup =
+  | 'reply'
+  | 'quote'
+  | 'mention'
+  | 'like'
+  | 'follow'
+  | 'category_topic'
+  | 'meetup'
+  | 'match'
+  | 'badge'
+  /** Staff notices (removed post, hidden topic, mute/ban, role). Always delivered; not in settings. */
+  | 'moderation';
 
 /** Display snapshot written by the server when the notification is created. All fields optional. */
 export interface NotificationData {
@@ -38,6 +50,12 @@ export interface NotificationData {
   team?: string | null;
   badge_name?: string;
   badge_icon?: string;
+  /** moderation: post_removed | topic_hidden | muted | banned | sanction_revoked | role_changed */
+  action?: string;
+  reason?: string;
+  ends_at?: string | null;
+  role?: string;
+  kind?: string;
 }
 
 export interface AppNotification {

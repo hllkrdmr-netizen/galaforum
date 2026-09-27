@@ -15,6 +15,10 @@ import { topicBadges } from '../../features/forum/TopicRow';
 import { SignInPrompt } from '../../features/auth/SignInPrompt';
 import { FollowTopicButton } from '../../features/community/FollowButtons';
 import { forum } from '../../services/forum';
+import { RestrictionNotice } from '../../features/moderation/ModParts';
+import { TopicModTools } from '../../features/moderation/TopicModTools';
+import { BlockedPost } from '../../features/moderation/BlockedPost';
+import { useBlocks, useMyRestriction } from '../../hooks/useModeration';
 
 export default function TopicScreen() {
   const { id = '' } = useLocalSearchParams<{ id: string }>();
@@ -27,6 +31,9 @@ function TopicContent({ id }: { id: string }) {
   const list = useRef<FlatList<Post>>(null);
   const { gutter } = useResponsive();
   const topic = useForumQuery(`forum:topic:${id}:${cursor}`, () => forum.getTopic(id, cursor), { staleTime: 10_000 });
+  const { isBlocked } = useBlocks();
+  const restriction = useMyRestriction();
+  const [revealed, setRevealed] = useState<ReadonlySet<string>>(new Set());
 
   if (topic.isLoading) {
     return (
@@ -91,12 +98,17 @@ function TopicContent({ id }: { id: string }) {
                 <AppText variant="caption" tone="muted">{formatCount(t.viewCount)} görüntülenme</AppText>
               </View>
             </View>
+            <TopicModTools topic={t} />
             <TopicPoll topicId={id} locked={t.isLocked} />
           </Container>
         }
         renderItem={({ item, index }) => (
           <View style={{ width: '100%', maxWidth: layout.maxContentWidth, alignSelf: 'center', paddingHorizontal: gutter }}>
-            <PostItem post={item} index={cursor + index} onQuote={t.isLocked ? undefined : (post) => { setQuote(post); list.current?.scrollToEnd({ animated: true }); }} />
+            {isBlocked(item.author.id) && !revealed.has(item.id) ? (
+              <BlockedPost username={item.author.username} onReveal={() => setRevealed((r) => new Set(r).add(item.id))} />
+            ) : (
+              <PostItem post={item} index={cursor + index} onQuote={t.isLocked || restriction ? undefined : (post) => { setQuote(post); list.current?.scrollToEnd({ animated: true }); }} />
+            )}
           </View>
         )}
         ListFooterComponent={<Container>
@@ -106,7 +118,7 @@ function TopicContent({ id }: { id: string }) {
             <Button label="Sonraki sayfa" variant="secondary" disabled={t.nextCursor === null} onPress={() => { if (t.nextCursor !== null) setCursor(t.nextCursor); list.current?.scrollToOffset({ offset: 0 }); }} />
           </View> : null}
           {t.isLocked ? <View style={styles.locked}><AppText tone="subtle">Bu konu yanıtlara kapatılmıştır.</AppText></View> :
-            <><SignInPrompt /><ReplyComposer topicId={id} quote={quote} clearQuote={() => setQuote(null)} onSent={() => { setCursor(Math.floor((t.replyCount + 1) / 20) * 20); }} /></>}
+            restriction ? <RestrictionNotice restriction={restriction} /> : <><SignInPrompt /><ReplyComposer topicId={id} quote={quote} clearQuote={() => setQuote(null)} onSent={() => { setCursor(Math.floor((t.replyCount + 1) / 20) * 20); }} /></>}
         </Container>}
 
       />

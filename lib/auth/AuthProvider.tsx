@@ -94,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Per-user data (likes, votes, inbox) must be refetched when the identity changes.
       invalidateQueries('forum:');
       invalidateQueries('notif:');
+      invalidateQueries('mod:');
     });
 
     // Native apps: only refresh tokens while in the foreground (recommended by Supabase).

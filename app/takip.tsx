@@ -10,6 +10,7 @@ import { CategoryIcon } from '../features/forum/CategoryIcon';
 import { useForumQuery } from '../hooks/useForumQuery';
 import { community } from '../services/community';
 import { forum } from '../services/forum';
+import { useBlocks } from '../hooks/useModeration';
 
 /** Everything the member follows: people, topics and categories. */
 export default function FollowingScreen() {
@@ -34,11 +35,14 @@ export default function FollowingScreen() {
           ) : q.error ? (
             <ErrorState message={q.error.message} onRetry={q.refetch} />
           ) : empty || !f ? (
-            <EmptyState
-              icon="notifications-outline"
-              title="Henüz kimseyi ya da hiçbir şeyi takip etmiyorsun."
-              message="Profillerdeki “Takip et”, konulardaki zil ve kategori sayfalarındaki düğmeyle takip edebilirsin."
-            />
+            <>
+              <EmptyState
+                icon="notifications-outline"
+                title="Henüz kimseyi ya da hiçbir şeyi takip etmiyorsun."
+                message="Profillerdeki “Takip et”, konulardaki zil ve kategori sayfalarındaki düğmeyle takip edebilirsin."
+              />
+              <BlockedSection />
+            </>
           ) : (
             <>
               {f.users.length > 0 ? (
@@ -57,6 +61,7 @@ export default function FollowingScreen() {
                   ))}
                 </View>
               ) : null}
+              <BlockedSection />
               {f.categories.length > 0 ? (
                 <View style={styles.section}>
                   <SectionHeader title="Kategoriler" />
@@ -99,3 +104,27 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
 });
+
+/** Members the reader blocked, with a one-tap unblock. */
+function BlockedSection() {
+  const { blocks, setBlock, busy } = useBlocks();
+  if (blocks.length === 0) return null;
+  return (
+    <View style={styles.section}>
+      <SectionHeader title="Engellediklerin" />
+      {blocks.map((u) => (
+        <View key={u.id} style={styles.row}>
+          <Avatar name={u.username} uri={u.avatarUrl} size={32} />
+          <AppText variant="bodyStrong" numberOfLines={1} style={{ flex: 1 }}>
+            {u.username}
+          </AppText>
+          <PressableScale accessibilityRole="button" accessibilityLabel={`${u.username} engelini kaldır`} disabled={busy} onPress={() => void setBlock(u.username, false)} style={{ minHeight: 40, justifyContent: 'center', paddingHorizontal: spacing.md }}>
+            <AppText variant="small" style={{ color: colors.goldSoft, fontWeight: '700' }}>
+              Engeli kaldır
+            </AppText>
+          </PressableScale>
+        </View>
+      ))}
+    </View>
+  );
+}

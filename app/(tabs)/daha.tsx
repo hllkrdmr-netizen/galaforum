@@ -8,6 +8,7 @@ import { AppText, Container, Pill, PressableScale, SectionHeader } from '../../c
 import { DEFAULT_CATEGORIES } from '../../constants/categories';
 import { colors, radius, spacing } from '../../constants/theme';
 import { CategoryIcon } from '../../features/forum/CategoryIcon';
+import { useOpenReportCount, useStaff } from '../../hooks/useModeration';
 import { useUnreadNotifications } from '../../hooks/useNotifications';
 import { useAuth } from '../../lib/auth/AuthProvider';
 import { unreadLabel } from '../../lib/notifications';
@@ -44,6 +45,8 @@ function MenuRow({ icon, label, hint, href, soon, count }: { icon: IconName; lab
 export default function DahaTab() {
   const { status, profile } = useAuth();
   const unread = useUnreadNotifications();
+  const { isStaff, demo } = useStaff();
+  const openReports = useOpenReportCount();
   const insets = useSafeAreaInsets();
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingTop: insets.top + spacing.xxl, paddingBottom: 140 }}>
@@ -63,7 +66,16 @@ export default function DahaTab() {
           ) : (
             <MenuRow icon="log-in-outline" label="Giriş yap / Üye ol" hint="E-posta ile güvenli giriş" href="/giris" />
           )}
-          <MenuRow icon="bookmark-outline" label="Takip ettiklerin" hint="Üyeler, konular ve kategoriler" href="/takip" />
+          {isStaff ? (
+            <MenuRow
+              icon="shield-half-outline"
+              label="Moderasyon paneli"
+              hint={demo ? 'Demo: şikâyetler, yaptırımlar ve kayıtlar' : 'Şikâyetler, üyeler, gizlenen konular ve kayıtlar'}
+              href="/moderasyon"
+              count={openReports > 0 ? String(openReports) : undefined}
+            />
+          ) : null}
+          <MenuRow icon="bookmark-outline" label="Takip ettiklerin" hint="Üyeler, konular, kategoriler ve engellediklerin" href="/takip" />
           <MenuRow icon="location-outline" label="Buluşmalar" hint="Maç günü buluşmaları ve ortak yolculuklar" href="/bulusmalar" />
           {status !== 'signedOut' ? (
             <MenuRow
