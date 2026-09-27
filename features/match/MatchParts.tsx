@@ -4,7 +4,9 @@ import { router } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { AccessibilityInfo, Animated, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 
-import { AppText, Button, Pill, PressableScale } from '../../components/ui';
+import { AppText, Button, Card, Pill, PressableScale, ProgressBar } from '../../components/ui';
+import { useForumQuery } from '../../hooks/useForumQuery';
+import { matches } from '../../services/match';
 import { colors, fonts, radius, shadows, spacing } from '../../constants/theme';
 import { useNow } from '../../hooks/useNow';
 import { countdown, EVENT_LABEL, eventMinuteLabel, isLive, kickoffLabel, matchTitle, scoreLabel, statusLabel } from '../../lib/match';
@@ -77,7 +79,7 @@ function Team({ name, align }: { name: string; align: 'left' | 'right' }) {
 }
 
 /** Narrow screens: one row per team with the score on the right, so long club names never break mid-word. */
-function StackedTeams({ match, showScore }: { match: Match; showScore: boolean }) {
+function StackedTeams({ match, showScore, large }: { match: Match; showScore: boolean; large?: boolean }) {
   const rows: Array<[string, number | null]> = [
     [match.homeTeam, match.homeScore],
     [match.awayTeam, match.awayScore],
@@ -86,10 +88,10 @@ function StackedTeams({ match, showScore }: { match: Match; showScore: boolean }
     <View style={{ gap: spacing.sm }}>
       {rows.map(([name, score]) => (
         <View key={name} style={styles.stackRow}>
-          <AppText variant="h2" numberOfLines={1} style={[{ flex: 1 }, isGalatasaray(name) && { color: colors.goldSoft }]}>
+          <AppText variant={large ? 'h1' : 'h2'} numberOfLines={1} style={[{ flex: 1 }, isGalatasaray(name) && { color: colors.goldSoft }]}>
             {name}
           </AppText>
-          {showScore ? <AppText style={styles.stackScore}>{score ?? '–'}</AppText> : null}
+          {showScore ? <AppText style={[styles.stackScore, large && styles.stackScoreLg]}>{score ?? '–'}</AppText> : null}
         </View>
       ))}
     </View>
@@ -171,8 +173,7 @@ export function NextMatchCard({ match }: { match: Match }) {
   const { width } = useWindowDimensions();
   const narrow = width < 560;
   return (
-    <View style={[styles.next, shadows.soft]}>
-      <LinearGradient colors={['#3A0A17', '#1A0609', '#0F0507']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+    <Card tone="wine">
       <View style={styles.boardTop}>
         <AppText variant="overline" tone="gold" uppercase>
           Sıradaki maç · {match.competition}
@@ -180,7 +181,7 @@ export function NextMatchCard({ match }: { match: Match }) {
         <StatusBadge match={match} />
       </View>
       {narrow ? (
-        <StackedTeams match={match} showScore={false} />
+        <StackedTeams match={match} showScore={false} large />
       ) : (
         <View style={styles.boardRow}>
           <Team name={match.homeTeam} align="left" />
@@ -219,36 +220,70 @@ export function NextMatchCard({ match }: { match: Match }) {
           Bu maç için ilk 11’ini kur
         </AppText>
       </PressableScale>
-    </View>
+    </Card>
   );
 }
 
-/** Prominent banner for a match that is live right now. */
-export function LiveMatchBanner({ match }: { match: Match }) {
+/**
+ * Live match hero card — as prominent as the next-match card: big score, minute progress,
+ * the latest key moment and direct entry to the live room.
+ */
+export function LiveMatchCard({ match }: { match: Match }) {
+  const { width } = useWindowDimensions();
+  const narrow = width < 560;
+  const detail = useForumQuery(`match:detail:${match.id}`, () => matches.getMatch(match.id), { staleTime: 15_000 });
+  const last = detail.data?.events.find((e) => e.type !== 'kickoff');
+  const lastTeam = last?.side === 'home' ? match.homeTeam : last?.side === 'away' ? match.awayTeam : null;
+  const minute = match.status === 'halftime' ? 45 : match.minute ?? 0;
   return (
-    <PressableScale
-      accessibilityRole="link"
-      accessibilityLabel={`Canlı maç: ${matchTitle(match)} ${scoreLabel(match)}, ${statusLabel(match)}. Canlı odaya gir.`}
-      onPress={() => router.push(`/mac/${match.id}`)}
-      style={({ hovered }) => [styles.liveBanner, hovered && { borderColor: colors.gold }]}
-    >
-      <LinearGradient colors={['rgba(140,29,51,0.55)', 'rgba(42,7,14,0.9)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
-      <View style={{ flex: 1, gap: 4 }}>
+    <Card tone="live">
+      <View style={styles.boardTop}>
+        <AppText variant="overline" tone="gold" uppercase>
+          Şimdi oynanıyor · {match.competition}
+        </AppText>
         <StatusBadge match={match} />
-        <AppText variant="h2" numberOfLines={1}>
-          {match.homeTeam} <AppText variant="h2" tone="gold">{scoreLabel(match)}</AppText> {match.awayTeam}
-        </AppText>
-        <AppText variant="caption" tone="muted">
-          {match.competition} · Canlı maç odası açık
-        </AppText>
       </View>
-      <View style={styles.enter}>
-        <AppText variant="small" tone="gold" style={{ fontWeight: '800' }}>
-          Odaya gir
-        </AppText>
-        <Ionicons name="arrow-forward" size={16} color={colors.gold} />
+      {narrow ? (
+        <StackedTeams match={match} showScore large />
+      ) : (
+        <View style={styles.boardRow}>
+          <Team name={match.homeTeam} align="left" />
+          <View style={styles.scoreBox}>
+            <AppText style={[styles.score, styles.scoreLg]}>{scoreLabel(match)}</AppText>
+          </View>
+          <Team name={match.awayTeam} align="right" />
+        </View>
+      )}
+      <View style={{ gap: 6 }}>
+        <ProgressBar value={minute / 90} marks={[0.5]} height={5} label={`Maç dakikası ${minute}`} />
+        <View style={styles.metaLine}>
+          <AppText variant="caption" tone="subtle" style={{ flex: 1 }}>
+            {match.status === 'halftime' ? 'Devre arası' : `${minute}. dakika`}
+          </AppText>
+          <AppText variant="caption" tone="subtle">
+            {match.venue}
+          </AppText>
+        </View>
       </View>
-    </PressableScale>
+      {last ? (
+        <View style={styles.lastEvent}>
+          <Ionicons name={EVENT_ICON[last.type].icon} size={16} color={EVENT_ICON[last.type].color} />
+          <AppText variant="small" numberOfLines={1} style={{ flex: 1 }}>
+            <AppText variant="small" tone="gold" style={{ fontWeight: '800' }}>
+              {eventMinuteLabel(last)}
+            </AppText>{' '}
+            {EVENT_LABEL[last.type]}
+            {lastTeam ? ` · ${lastTeam}` : ''}
+          </AppText>
+        </View>
+      ) : null}
+      <View style={styles.actions}>
+        <Button label="Canlı odaya gir" icon="radio-outline" onPress={() => router.push(`/mac/${match.id}`)} />
+        {match.topicId ? (
+          <Button label="Tartışmaya Katıl" variant="secondary" icon="chatbubbles-outline" onPress={() => router.push(`/konu/${match.topicId}`)} />
+        ) : null}
+      </View>
+    </Card>
   );
 }
 
@@ -367,7 +402,6 @@ const styles = StyleSheet.create({
   scoreBox: { minWidth: 96, alignItems: 'center' },
   score: { fontFamily: fonts.display, fontSize: 44, lineHeight: 50, fontWeight: '800', color: colors.goldSoft, letterSpacing: 1 },
   vs: { fontFamily: fonts.display, fontSize: 22, fontWeight: '800', color: colors.textSubtle, paddingHorizontal: spacing.sm },
-  next: { borderRadius: radius.xl, overflow: 'hidden', padding: spacing.xl, gap: spacing.lg, borderWidth: 1, borderColor: colors.borderGold },
   metaLine: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   countdown: { flexDirection: 'row', gap: spacing.sm },
   cdBlock: {
@@ -382,17 +416,6 @@ const styles = StyleSheet.create({
   },
   cdValue: { fontFamily: fonts.display, fontSize: 30, lineHeight: 34, fontWeight: '800', color: colors.text },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  liveBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.lg,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,90,78,0.45)',
-  },
-  enter: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   textLink: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, alignSelf: 'flex-start' },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.lg },
   divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
@@ -400,5 +423,8 @@ const styles = StyleSheet.create({
   event: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
   eventMin: { width: 60 },
   stackRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  stackScoreLg: { fontSize: 44, lineHeight: 48 },
+  scoreLg: { fontSize: 56, lineHeight: 60, color: colors.text },
+  lastEvent: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, backgroundColor: 'rgba(11,5,7,0.45)' },
   stackScore: { fontFamily: fonts.display, fontSize: 34, lineHeight: 38, fontWeight: '800', color: colors.goldSoft, minWidth: 32, textAlign: 'right' },
 });

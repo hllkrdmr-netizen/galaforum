@@ -10,7 +10,7 @@ import { isLive, nextMatch } from '../../lib/match';
 import { forum } from '../../services/forum';
 import { matches } from '../../services/match';
 import { TopicRow } from '../forum/TopicRow';
-import { LiveMatchBanner, MatchRow, NextMatchCard } from './MatchParts';
+import { LiveMatchCard, MatchRow, NextMatchCard } from './MatchParts';
 
 export function MatchHubScreen() {
   const insets = useSafeAreaInsets();
@@ -80,7 +80,7 @@ export function MatchHubScreen() {
         ) : (
           <>
             {live.map((m) => (
-              <LiveMatchBanner key={m.id} match={m} />
+              <LiveMatchCard key={m.id} match={m} />
             ))}
             {next ? <NextMatchCard match={next} /> : null}
           </>

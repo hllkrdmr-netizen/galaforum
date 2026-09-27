@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText, Button, Container, EmptyState, ErrorState, PressableScale, ScreenHeader, SkeletonRow } from '../components/ui';
 import { colors, radius, spacing } from '../constants/theme';
-import { MeetupRow } from '../features/community/CommunityParts';
+import { MeetupCard } from '../features/community/MeetupCards';
 import { useForumQuery } from '../hooks/useForumQuery';
 import { community } from '../services/community';
 
@@ -64,7 +64,7 @@ export default function MeetupsScreen() {
                 onAction={() => router.push('/bulusma-olustur')}
               />
             ) : (
-              (data.data ?? []).map((m, i, arr) => <MeetupRow key={m.id} meetup={m} isLast={i === arr.length - 1} />)
+              (data.data ?? []).map((m) => <MeetupCard key={m.id} meetup={m} />)
             )}
           </View>
         </Container>
@@ -79,5 +79,5 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: { minHeight: 36, justifyContent: 'center', paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border },
   chipOn: { borderColor: colors.gold, backgroundColor: 'rgba(217,164,65,0.12)' },
-  list: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  list: { gap: spacing.md },
 });

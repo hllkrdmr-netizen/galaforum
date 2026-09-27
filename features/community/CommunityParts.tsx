@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText, Avatar, PressableScale } from '../../components/ui';
 import { colors, radius, spacing } from '../../constants/theme';
@@ -62,20 +62,29 @@ export function BadgeChip({ badge }: { badge: Badge }) {
   );
 }
 
-/** Horizontal strip of the most active members (avatar + name + post count). */
+/** Horizontal strip of the most active members; the top three get a gold ring and rank. */
 export function ActiveMembers({ members }: { members: ActiveMember[] }) {
   return (
-    <View style={styles.people}>
-      {members.map((m) => (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.people}>
+      {members.map((m, i) => (
         <PressableScale
           key={m.id}
           accessibilityRole="link"
-          accessibilityLabel={`${m.username}, son 30 günde ${m.postCount} mesaj`}
+          accessibilityLabel={`${i + 1}. ${m.username}, son 30 günde ${m.postCount} mesaj`}
           onPress={() => router.push(`/uye/${m.username}`)}
-          style={styles.person}
+          style={({ hovered }) => [styles.person, hovered && { backgroundColor: colors.surfaceHover }]}
         >
-          <Avatar name={m.username} uri={m.avatarUrl} size={44} />
-          <AppText variant="caption" numberOfLines={1} style={{ maxWidth: 72, fontWeight: '600' }}>
+          <View style={[styles.avatarRing, i < 3 && styles.avatarRingTop]}>
+            <Avatar name={m.username} uri={m.avatarUrl} size={52} />
+          </View>
+          {i < 3 ? (
+            <View style={styles.rank}>
+              <AppText variant="caption" style={{ fontSize: 10, fontWeight: '900', color: colors.textOnGold }}>
+                {i + 1}
+              </AppText>
+            </View>
+          ) : null}
+          <AppText variant="caption" numberOfLines={1} style={{ maxWidth: 84, fontWeight: '700', marginTop: 6 }}>
             {m.username}
           </AppText>
           <AppText variant="caption" tone="subtle">
@@ -83,7 +92,7 @@ export function ActiveMembers({ members }: { members: ActiveMember[] }) {
           </AppText>
         </PressableScale>
       ))}
-    </View>
+    </ScrollView>
   );
 }
 
@@ -107,6 +116,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  people: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  person: { alignItems: 'center', gap: 2, width: 76 },
+  people: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.xs },
+  person: { alignItems: 'center', width: 96, paddingVertical: spacing.sm, borderRadius: radius.lg },
+  avatarRing: { padding: 3, borderRadius: 40, borderWidth: 2, borderColor: 'transparent' },
+  avatarRingTop: { borderColor: colors.gold },
+  rank: {
+    position: 'absolute',
+    top: spacing.sm + 44,
+    right: 22,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.gold,
+    borderWidth: 2,
+    borderColor: colors.bg,
+  },
 });

@@ -20,11 +20,11 @@ interface MeetupRow {
   match_id: string | null;
   cancelled: boolean;
   organizer: { id: string; username: string; avatar_url: string | null; role: UserRole } | null;
-  attendees: Array<{ user_id: string }>;
+  attendees: Array<{ user_id: string; profile: { id: string; username: string; avatar_url: string | null; role: UserRole } | null }>;
 }
 
 const MEETUP_SELECT =
-  'id, title, description, starts_at, city, place_name, address, lat, lng, capacity, match_id, cancelled, organizer:profiles!meetups_created_by_fkey(id, username, avatar_url, role), attendees:meetup_attendees(user_id)';
+  'id, title, description, starts_at, city, place_name, address, lat, lng, capacity, match_id, cancelled, organizer:profiles!meetups_created_by_fkey(id, username, avatar_url, role), attendees:meetup_attendees(user_id, profile:profiles(id, username, avatar_url, role))';
 
 const MESSAGES: Array<[string, string]> = [
   ['meetup_full', 'Kontenjan dolu.'],
@@ -69,6 +69,11 @@ export function createSupabaseCommunityRepository(sb: SupabaseClient): Community
     cancelled: r.cancelled,
     attendeeCount: r.attendees.length,
     isAttending: Boolean(me && r.attendees.some((a) => a.user_id === me)),
+    attendeePreview: r.attendees
+      .map((a) => a.profile)
+      .filter((p): p is NonNullable<typeof p> => Boolean(p))
+      .slice(0, 5)
+      .map((p) => ({ id: p.id, username: p.username, avatarUrl: p.avatar_url, role: p.role })),
   });
 
   return {

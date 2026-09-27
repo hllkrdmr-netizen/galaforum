@@ -52,6 +52,8 @@ export interface Meetup {
   cancelled: boolean;
   attendeeCount: number;
   isAttending: boolean;
+  /** First few attendees, for avatar stacks in lists. */
+  attendeePreview: AuthorSummary[];
 }
 
 export interface MeetupDetail extends Meetup {

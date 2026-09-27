@@ -10,3 +10,6 @@ export { SectionHeader } from './SectionHeader';
 export { Skeleton, SkeletonRow } from './Skeleton';
 export { EmptyState, ErrorState } from './StateViews';
 export { TextField } from './TextField';
+export { AvatarStack } from './AvatarStack';
+export { Card } from './Card';
+export { ProgressBar } from './ProgressBar';

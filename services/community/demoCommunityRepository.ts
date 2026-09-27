@@ -8,7 +8,7 @@ import { DEMO_GUEST } from '../forum/demoRepository';
 import { ForumError } from '../forum/repository';
 import type { CommunityRepository } from './repository';
 
-interface StoredMeetup extends Omit<Meetup, 'organizer' | 'attendeeCount' | 'isAttending'> {
+interface StoredMeetup extends Omit<Meetup, 'organizer' | 'attendeeCount' | 'isAttending' | 'attendeePreview'> {
   organizerId: string;
   attendeeIds: string[];
 }
@@ -123,6 +123,7 @@ export function createDemoCommunityRepository(meetups = buildDemoMeetups(), cloc
     cancelled: m.cancelled,
     attendeeCount: m.attendeeIds.length,
     isAttending: m.attendeeIds.includes(me),
+    attendeePreview: m.attendeeIds.slice(0, 5).map(userById).filter((u): u is AuthorSummary => Boolean(u)),
   });
 
   const find = (id: string) => {
