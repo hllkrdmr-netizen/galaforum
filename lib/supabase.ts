@@ -2,7 +2,6 @@ import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { Platform } from 'react-native';
 
 import { env, isSupabaseConfigured } from './env';
 
@@ -17,7 +16,9 @@ export function getSupabase(): SupabaseClient | null {
         storage: AsyncStorage,
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: Platform.OS === 'web',
+        // PKCE on every platform; e-mail links are exchanged explicitly in app/auth-callback.tsx.
+        flowType: 'pkce',
+        detectSessionInUrl: false,
       },
     });
   }

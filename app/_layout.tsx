@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { colors } from '../constants/theme';
+import { AuthProvider } from '../lib/auth/AuthProvider';
 
 export default function RootLayout() {
   useEffect(() => {
@@ -12,20 +13,23 @@ export default function RootLayout() {
   }, []);
   return (
     <SafeAreaProvider style={{ flex: 1, backgroundColor: colors.bg }}>
-      <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.bg },
-          animation: Platform.OS === 'android' ? 'fade_from_bottom' : 'default',
-        }}
-      >
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="kategori/[slug]" />
-        <Stack.Screen name="konu/[id]" />
-        <Stack.Screen name="ara" />
-        <Stack.Screen name="konu-ac" options={{ presentation: 'modal' }} />
-      </Stack>
+      <AuthProvider>
+        <StatusBar style="light" />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.bg },
+            animation: Platform.OS === 'android' ? 'fade_from_bottom' : 'default',
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="kategori/[slug]" />
+          <Stack.Screen name="konu/[id]" />
+          <Stack.Screen name="ara" />
+          <Stack.Screen name="konu-ac" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="auth-callback" options={{ animation: 'none' }} />
+        </Stack>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

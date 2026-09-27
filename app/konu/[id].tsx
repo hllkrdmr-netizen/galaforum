@@ -12,6 +12,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { formatCount } from '../../lib/format';
 import { PostItem } from '../../features/forum/PostItem';
 import { topicBadges } from '../../features/forum/TopicRow';
+import { SignInPrompt } from '../../features/auth/SignInPrompt';
 import { forum } from '../../services/forum';
 
 export default function TopicScreen() {
@@ -104,7 +105,7 @@ function TopicContent({ id }: { id: string }) {
             <Button label="Sonraki sayfa" variant="secondary" disabled={t.nextCursor === null} onPress={() => { if (t.nextCursor !== null) setCursor(t.nextCursor); list.current?.scrollToOffset({ offset: 0 }); }} />
           </View>
           {t.isLocked ? <View style={styles.locked}><AppText tone="subtle">Bu konu yanıtlara kapatılmıştır.</AppText></View> :
-            <ReplyComposer topicId={id} quote={quote} clearQuote={() => setQuote(null)} onSent={() => { setCursor(Math.floor((t.replyCount + 1) / 20) * 20); }} />}
+            <><SignInPrompt /><ReplyComposer topicId={id} quote={quote} clearQuote={() => setQuote(null)} onSent={() => { setCursor(Math.floor((t.replyCount + 1) / 20) * 20); }} /></>}
         </Container>}
 
       />

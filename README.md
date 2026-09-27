@@ -28,6 +28,12 @@ Apply `supabase/migrations/*.sql` to your project (`supabase db push` or the SQL
 creates profiles, categories (seeded with the 11 default categories), topics and posts, with RLS enabled on
 every table. **Never** put the service-role key in the client or in `.env` files used by Expo.
 
+Authentication (Phase 4) uses Supabase e-mail auth with PKCE. Add `galaforum://auth-callback` and your web
+origin + `/auth-callback` to *Authentication → URL Configuration → Redirect URLs*; see `docs/PHASE4.md`.
+
+To verify migrations locally on plain PostgreSQL 16:
+`psql -f scripts/db-check/supabase-shim.sql`, apply `supabase/migrations/*.sql` in order, then `psql -f scripts/db-check/phase4.sql`.
+
 ## Scripts
 
 | Script | What it does |

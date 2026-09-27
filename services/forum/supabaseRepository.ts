@@ -1,9 +1,13 @@
 import { requireText, validatePage, validatePoll } from '../../lib/interactions';
-import type { Poll } from '../../types/forum';
+import type {
+  Poll,
+  PublicProfile,
+  SearchOptions,
+} from '../../types/forum';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { CATEGORY_BY_SLUG, DEFAULT_CATEGORIES } from '../../constants/categories';
-import { escapeLike, MIN_QUERY_LENGTH } from '../../lib/search';
+import { canSearch, escapeLike, matchesAll, queryTerms, sinceToDate } from '../../lib/search';
 import { hasErrors, validateTopicInput } from '../../lib/validation';
 import type {
   AuthorSummary,
@@ -245,38 +249,60 @@ export function createSupabaseRepository(sb: SupabaseClient): ForumRepository {
     },
     async vote(pollId, optionId) { await mutate('forum_vote', { p_poll_id: pollId, p_option_id: optionId }); },
 
-    async search(query, limit = 20): Promise<SearchResults> {
+    async search(query, options: SearchOptions = {}): Promise<SearchResults> {
       const q = query.trim();
       const empty: SearchResults = { query, topics: [], posts: [], categories: [], users: [] };
-      if (q.length < MIN_QUERY_LENGTH) return empty;
-      const pattern = `%${escapeLike(q)}%`;
+      if (!canSearch(q, options)) return empty;
+      const limit = Math.min(Math.max(options.limit ?? 20, 1), 50);
+      const args = {
+        p_query: q,
+        p_category: options.category ?? null,
+        p_author: options.author?.trim().toLowerCase() || null,
+        p_since: sinceToDate(options.since)?.toISOString() ?? null,
+        p_sort: options.sort ?? 'relevance',
+        p_limit: limit,
+      };
+      // Ranked ids come from the database (full-text + trigram); rows are hydrated with the usual selects.
+      const [topicHits, postHits] = await Promise.all([
+        sb.rpc('forum_search_topics', args),
+        sb.rpc('forum_search_posts', args),
+      ]);
+      const hitErr = topicHits.error ?? postHits.error;
+      if (hitErr) fail(hitErr, 'Arama yapılamadı.');
+      const topicIds = ((topicHits.data ?? []) as Array<{ id: string }>).map((h) => h.id);
+      const postIds = ((postHits.data ?? []) as Array<{ id: string }>).map((h) => h.id);
+      const broad = q.length > 0 && !args.p_author && !args.p_category;
       const [topics, posts, users] = await Promise.all([
-        sb.from('topics').select(TOPIC_SELECT).ilike('title', pattern).order('last_activity_at', { ascending: false }).limit(limit),
-        sb
-          .from('posts')
-          .select(`${POST_SELECT}, topic:topics!inner(id, title, category:categories(slug, name))`)
-          .eq('is_deleted', false)
-          .ilike('body', pattern)
-          .order('created_at', { ascending: false })
-          .limit(limit),
-        sb.from('profiles').select(PROFILE_FIELDS).ilike('username', pattern).limit(10),
+        topicIds.length ? sb.from('topics').select(TOPIC_SELECT).in('id', topicIds) : Promise.resolve({ data: [], error: null }),
+        postIds.length
+          ? sb.from('posts').select(`${POST_SELECT}, topic:topics!inner(id, title, category:categories(slug, name))`).in('id', postIds)
+          : Promise.resolve({ data: [], error: null }),
+        broad
+          ? sb.from('profiles').select(PROFILE_FIELDS).ilike('username', `%${escapeLike(q.toLowerCase())}%`).is('deleted_at', null).limit(10)
+          : Promise.resolve({ data: [], error: null }),
       ]);
       const err = topics.error ?? posts.error ?? users.error;
       if (err) fail(err, 'Arama yapılamadı.');
-      const lower = q.toLocaleLowerCase('tr-TR');
+      const order = (ids: string[]) => (a: { id: string }, b: { id: string }) => ids.indexOf(a.id) - ids.indexOf(b.id);
+      const terms = queryTerms(q);
+      type PostHit = PostRow & { topic: { id: string; title: string; category: { slug: string; name: string } | null } };
       return {
         query,
-        topics: ((topics.data ?? []) as unknown as TopicRow[]).map(toTopic),
-        posts: ((posts.data ?? []) as unknown as Array<PostRow & { topic: { id: string; title: string; category: { slug: string; name: string } | null } }>).map(
-          (r) => ({
-            post: toPost(r),
-            topic: { id: r.topic.id, title: r.topic.title },
-            category: r.topic.category ?? { slug: 'serbest', name: 'Serbest' },
-          }),
-        ),
-        categories: DEFAULT_CATEGORIES.filter((c) => c.name.toLocaleLowerCase('tr-TR').includes(lower)),
+        topics: ((topics.data ?? []) as unknown as TopicRow[]).sort(order(topicIds)).map(toTopic),
+        posts: ((posts.data ?? []) as unknown as PostHit[]).sort(order(postIds)).map((r) => ({
+          post: toPost(r),
+          topic: { id: r.topic.id, title: r.topic.title },
+          category: r.topic.category ?? { slug: 'serbest', name: 'Serbest' },
+        })),
+        categories: broad ? DEFAULT_CATEGORIES.filter((c) => matchesAll(`${c.name} ${c.description}`, terms)) : [],
         users: ((users.data ?? []) as ProfileRow[]).map(toAuthor),
       };
+    },
+
+    async getProfile(username): Promise<PublicProfile | null> {
+      const { data, error } = await sb.rpc('forum_profile', { p_username: username.trim().toLowerCase() });
+      if (error) fail(error, 'Profil yüklenemedi.');
+      return (data as PublicProfile | null) ?? null;
     },
 
     async createTopic(input) {

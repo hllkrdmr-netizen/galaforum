@@ -92,3 +92,31 @@ export interface ForumOverview {
 export interface PollInput { question: string; options: string[] }
 export interface Poll { id: string; question: string; options: { id: string; label: string; votes: number }[]; myOptionId: string | null; totalVotes: number }
 export interface ReplyInput { topicId: string; body: string; quotePostId?: string }
+
+export type SearchSort = 'relevance' | 'newest' | 'replies';
+export type SearchSince = 'all' | '24h' | '7d' | '30d';
+
+export interface SearchOptions {
+  /** Category slug */
+  category?: string;
+  /** Author username (exact) */
+  author?: string;
+  since?: SearchSince;
+  sort?: SearchSort;
+  limit?: number;
+}
+
+export interface PublicProfile {
+  author: AuthorSummary;
+  joinedAt: string;
+  topicCount: number;
+  postCount: number;
+  likesReceived: number;
+  recentTopics: Array<{
+    id: string;
+    title: string;
+    replyCount: number;
+    lastActivityAt: string;
+    category: Pick<Category, 'slug' | 'name'>;
+  }>;
+}

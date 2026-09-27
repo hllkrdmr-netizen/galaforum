@@ -8,6 +8,7 @@ import { AppText, Container, Pill, PressableScale, SectionHeader } from '../../c
 import { DEFAULT_CATEGORIES } from '../../constants/categories';
 import { colors, radius, spacing } from '../../constants/theme';
 import { CategoryIcon } from '../../features/forum/CategoryIcon';
+import { useAuth } from '../../lib/auth/AuthProvider';
 import { forum } from '../../services/forum';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -38,14 +39,23 @@ function MenuRow({ icon, label, hint, href, soon }: { icon: IconName; label: str
 }
 
 export default function DahaTab() {
+  const { status, profile } = useAuth();
   const insets = useSafeAreaInsets();
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingTop: insets.top + spacing.xxl, paddingBottom: 140 }}>
       <Container>
         <SectionHeader overline="Hesap" title="Daha" />
         <View style={styles.group}>
-          <MenuRow icon="person-circle-outline" label="Profilim" hint="Rozetler, mesajlar ve takip ettiklerin" soon />
-          <MenuRow icon="log-in-outline" label="Giriş yap / Üye ol" hint="E-posta ile güvenli giriş" soon />
+          {status === 'signedIn' && profile ? (
+            <>
+              <MenuRow icon="person-circle-outline" label="Profilim" hint={`@${profile.username} · konular, mesajlar ve beğeniler`} href={`/uye/${profile.username}`} />
+              <MenuRow icon="settings-outline" label="Hesap ayarları" hint="Kullanıcı adı, şifre, çıkış ve hesap silme" href="/hesap" />
+            </>
+          ) : status === 'unavailable' ? (
+            <MenuRow icon="log-in-outline" label="Giriş yap / Üye ol" hint="Demo modunda kapalı — Supabase bağlantısı gerekir" href="/hesap" />
+          ) : (
+            <MenuRow icon="log-in-outline" label="Giriş yap / Üye ol" hint="E-posta ile güvenli giriş" href="/giris" />
+          )}
           <MenuRow icon="notifications-outline" label="Bildirimler" hint="Yanıtlar, bahsetmeler ve maç uyarıları" soon />
           <MenuRow icon="search-outline" label="Forumda ara" href="/ara" />
           <MenuRow icon="create-outline" label="Konu Aç" href="/konu-ac" />

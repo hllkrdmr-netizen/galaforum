@@ -1,5 +1,7 @@
 import type {
   Poll,
+  PublicProfile,
+  SearchOptions,
   ReplyInput,
   CategoryWithStats,
   CreateTopicInput,
@@ -33,7 +35,13 @@ export interface ForumRepository {
   report(postId: string, reason: string): Promise<void>;
   getPoll(topicId: string): Promise<Poll | null>;
   vote(pollId: string, optionId: string): Promise<void>;
-  search(query: string, limit?: number): Promise<SearchResults>;
+  /**
+   * Searches topic titles, post bodies, categories and usernames.
+   * An empty query is allowed when `options.author` is set (lists that member's content).
+   */
+  search(query: string, options?: SearchOptions): Promise<SearchResults>;
+  /** Public member profile; null when the member does not exist or deleted the account. */
+  getProfile(username: string): Promise<PublicProfile | null>;
   createTopic(input: CreateTopicInput): Promise<{ id: string }>;
 }
 

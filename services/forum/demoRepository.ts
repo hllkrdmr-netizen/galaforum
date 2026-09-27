@@ -1,7 +1,7 @@
 import { mentionNames, requireText, validatePage, validatePoll } from '../../lib/interactions';
 import type { Poll } from '../../types/forum';
 import { CATEGORY_BY_SLUG, DEFAULT_CATEGORIES } from '../../constants/categories';
-import { matchesAll, MIN_QUERY_LENGTH, queryTerms } from '../../lib/search';
+import { canSearch, matchesAll, queryTerms, sinceToDate, termScore } from '../../lib/search';
 import { hasErrors, validateTopicInput } from '../../lib/validation';
 import type {
   AuthorSummary,
@@ -9,6 +9,8 @@ import type {
   CreateTopicInput,
   LatestPost,
   Post,
+  PublicProfile,
+  SearchOptions,
   SearchResults,
   TopicDetail,
   TopicSummary,
@@ -212,34 +214,83 @@ export function createDemoRepository(state: DemoState = buildDemoState()): Forum
       return { ...summarize(topic), posts: posts.slice(cursor, cursor + pageSize).map((p) => toPost(p, openingId)), nextCursor: cursor + pageSize < posts.length ? cursor + pageSize : null };
     },
 
-    async search(query, limit = 20): Promise<SearchResults> {
-      const terms = queryTerms(query);
+    async search(query, options: SearchOptions = {}): Promise<SearchResults> {
+      const limit = Math.min(Math.max(options.limit ?? 20, 1), 50);
       const empty: SearchResults = { query, topics: [], posts: [], categories: [], users: [] };
-      if (query.trim().length < MIN_QUERY_LENGTH || terms.length === 0) return empty;
-
+      if (!canSearch(query, options)) return empty;
+      const terms = queryTerms(query);
+      const author = options.author?.trim().toLowerCase() || undefined;
+      const since = sinceToDate(options.since)?.toISOString();
+      const sort = options.sort ?? 'relevance';
       const summaries = allSummaries();
+
       const topics = summaries
-        .filter((t) => matchesAll(t.title, terms))
-        .sort((a, b) => b.lastActivityAt.localeCompare(a.lastActivityAt))
-        .slice(0, limit);
-
-      const posts = [...state.posts]
-        .filter((p) => matchesAll(p.body, terms))
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .filter((t) => terms.length === 0 || matchesAll(t.title, terms))
+        .filter((t) => !options.category || t.category.slug === options.category)
+        .filter((t) => !author || t.author.username === author)
+        .filter((t) => !since || t.lastActivityAt >= since)
+        .map((t) => ({ t, score: termScore(t.title, terms) }))
+        .sort(
+          (a, b) =>
+            (sort === 'replies' ? b.t.replyCount - a.t.replyCount : 0) ||
+            (sort === 'newest' ? b.t.lastActivityAt.localeCompare(a.t.lastActivityAt) : 0) ||
+            b.score - a.score ||
+            b.t.lastActivityAt.localeCompare(a.t.lastActivityAt),
+        )
         .slice(0, limit)
-        .map((p) => {
-          const t = summaries.find((s) => s.id === p.topicId)!;
-          const openingId = postsOf(p.topicId)[0]?.id;
-          return {
-            post: toPost(p, openingId),
-            topic: { id: t.id, title: t.title },
-            category: { slug: t.category.slug, name: t.category.name },
-          };
-        });
+        .map(({ t }) => t);
 
-      const categories = DEFAULT_CATEGORIES.filter((c) => matchesAll(`${c.name} ${c.description}`, terms));
-      const users = state.users.filter((u) => u.id !== DEMO_GUEST.id && matchesAll(u.username, terms));
+      const posts = state.posts
+        .map((p) => ({ p, t: summaries.find((s) => s.id === p.topicId)! }))
+        .filter(({ t }) => Boolean(t))
+        .filter(({ p }) => terms.length === 0 || matchesAll(p.body, terms))
+        .filter(({ t }) => !options.category || t.category.slug === options.category)
+        .filter(({ p }) => !author || userById(p.authorId).username === author)
+        .filter(({ p }) => !since || p.createdAt >= since)
+        .map((x) => ({ ...x, score: termScore(x.p.body, terms) }))
+        .sort(
+          (a, b) =>
+            (sort === 'replies' ? b.t.replyCount - a.t.replyCount : 0) ||
+            (sort === 'newest' ? b.p.createdAt.localeCompare(a.p.createdAt) : 0) ||
+            b.score - a.score ||
+            b.p.createdAt.localeCompare(a.p.createdAt),
+        )
+        .slice(0, limit)
+        .map(({ p, t }) => ({
+          post: toPost(p, postsOf(p.topicId)[0]?.id),
+          topic: { id: t.id, title: t.title },
+          category: { slug: t.category.slug, name: t.category.name },
+        }));
+
+      const broad = terms.length > 0 && !author && !options.category;
+      const categories = broad ? DEFAULT_CATEGORIES.filter((c) => matchesAll(`${c.name} ${c.description}`, terms)) : [];
+      const users = broad ? state.users.filter((u) => u.id !== DEMO_GUEST.id && matchesAll(u.username, terms)) : [];
       return { query, topics, posts, categories, users };
+    },
+
+    async getProfile(username): Promise<PublicProfile | null> {
+      const name = username.trim().toLowerCase();
+      const user = state.users.find((u) => u.username === name);
+      if (!user) return null;
+      const own = state.posts.filter((p) => p.authorId === user.id);
+      const topics = allSummaries()
+        .filter((t) => t.author.id === user.id)
+        .sort((a, b) => b.lastActivityAt.localeCompare(a.lastActivityAt));
+      const joinedAt = own.map((p) => p.createdAt).sort()[0] ?? new Date().toISOString();
+      return {
+        author: user,
+        joinedAt,
+        topicCount: topics.length,
+        postCount: own.length,
+        likesReceived: own.filter((p) => likes.has(p.id)).length,
+        recentTopics: topics.slice(0, 10).map((t) => ({
+          id: t.id,
+          title: t.title,
+          replyCount: t.replyCount,
+          lastActivityAt: t.lastActivityAt,
+          category: { slug: t.category.slug, name: t.category.name },
+        })),
+      };
     },
 
     async reply(input) {

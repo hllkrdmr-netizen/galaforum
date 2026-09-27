@@ -7,6 +7,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View
 import { AppText, Button, Container, PressableScale, ScreenHeader } from '../components/ui';
 import { CATEGORY_BY_SLUG, DEFAULT_CATEGORIES } from '../constants/categories';
 import { colors, fonts, radius, spacing } from '../constants/theme';
+import { SignInPrompt } from '../features/auth/SignInPrompt';
 import { CategoryIcon } from '../features/forum/CategoryIcon';
 import { invalidateQueries } from '../hooks/useForumQuery';
 import { POST_BODY_MAX, TOPIC_TITLE_MAX, hasErrors, validateTopicInput } from '../lib/validation';
@@ -115,6 +116,8 @@ export default function CreateTopicScreen() {
           </View>
 
           <PollEditor value={poll} onChange={setPoll} />
+
+          <SignInPrompt message="Konu açmak için giriş yapmalısın." />
 
           {submitError ? (
             <View style={styles.alert} accessibilityRole="alert">
