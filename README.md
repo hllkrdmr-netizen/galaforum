@@ -38,8 +38,8 @@ To verify migrations locally on plain PostgreSQL 16:
 
 | Script | What it does |
 | --- | --- |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Unit tests with Node's built-in test runner (formatting, search, categories, demo repository) |
+| `npm run typecheck` | `tsc --noEmit` for the app, then again for `tests/` (`-p tests`) |
+| `npm test` | Unit tests with Node's built-in test runner (auth, categories, demo repository, formatting, interactions, match, search, profile search) |
 | `npm run export:web` | Production web export (`expo export --platform web`) |
 
 ## Structure
