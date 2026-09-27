@@ -28,7 +28,7 @@ export function HeroSection({
   const lionSize = isDesktop ? 700 : isWide ? Math.min(620, width * 0.8) : Math.min(560, width * 1.08);
   const innerWidth = Math.min(width, layout.maxContentWidth);
   // Keep only the outer red mane tip beyond the viewport; preserve the supplied image.
-  const lionRight = -lionSize * 0.09;
+  const lionRight = -lionSize * 0.14;
   const lionTop = isDesktop ? -30 : insets.top + (isWide ? 0 : 6);
   const textTop = isDesktop ? 0 : isWide ? lionSize * 0.34 : lionSize * 0.58;
   // Veil stops are computed against the full viewport so there is no visible seam at the container edge.
