@@ -16,6 +16,9 @@
 - UX simplification pass (see `UX-SADELESTIRME.md`).
 - Phase 6: profiles (bio, city, favourite category, level), follows (users/topics/categories), automatic badges,
   meetups with city filter, capacity and map preview, community hub. See `PHASE6.md`.
+- Phase 7: notifications — in-app inbox (grouped replies/likes, day sections, unread filter, mark read), unread bell
+  with realtime, per-type in-app/push preferences, push token registry and push outbox for a server worker.
+  Native push delivery needs `expo-notifications` and a worker; see `PHASE7.md`.
 
 ## Known limitations
 - **Dependencies not yet added:** `@tanstack/react-query`, `zustand`, `eslint`/`eslint-config-expo`,
@@ -31,6 +34,5 @@
 - Demo interactions are session-only; accounts are disabled in demo mode.
 
 ## Next
-- Phase 7 — Notifications (in-app + Expo push foundations, preferences)
 - Phase 8 — Moderation roles, tools and audit logs
 - Phase 9 — QA/release

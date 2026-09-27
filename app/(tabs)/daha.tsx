@@ -8,12 +8,14 @@ import { AppText, Container, Pill, PressableScale, SectionHeader } from '../../c
 import { DEFAULT_CATEGORIES } from '../../constants/categories';
 import { colors, radius, spacing } from '../../constants/theme';
 import { CategoryIcon } from '../../features/forum/CategoryIcon';
+import { useUnreadNotifications } from '../../hooks/useNotifications';
 import { useAuth } from '../../lib/auth/AuthProvider';
+import { unreadLabel } from '../../lib/notifications';
 import { forum } from '../../services/forum';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-function MenuRow({ icon, label, hint, href, soon }: { icon: IconName; label: string; hint?: string; href?: Href; soon?: boolean }) {
+function MenuRow({ icon, label, hint, href, soon, count }: { icon: IconName; label: string; hint?: string; href?: Href; soon?: boolean; count?: string }) {
   return (
     <PressableScale
       accessibilityRole={href ? 'link' : 'text'}
@@ -33,6 +35,7 @@ function MenuRow({ icon, label, hint, href, soon }: { icon: IconName; label: str
           </AppText>
         ) : null}
       </View>
+      {count ? <Pill label={count} tone="gold" /> : null}
       {soon ? <Pill label="Yakında" /> : <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />}
     </PressableScale>
   );
@@ -40,6 +43,7 @@ function MenuRow({ icon, label, hint, href, soon }: { icon: IconName; label: str
 
 export default function DahaTab() {
   const { status, profile } = useAuth();
+  const unread = useUnreadNotifications();
   const insets = useSafeAreaInsets();
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingTop: insets.top + spacing.xxl, paddingBottom: 140 }}>
@@ -52,6 +56,7 @@ export default function DahaTab() {
             <>
               <MenuRow icon="person-circle-outline" label="Profilim" hint={`@${profile.username} · konular, mesajlar ve beğeniler`} href={`/uye/${profile.username}`} />
               <MenuRow icon="settings-outline" label="Hesap ayarları" hint="Kullanıcı adı, şifre, çıkış ve hesap silme" href="/hesap" />
+              <MenuRow icon="options-outline" label="Bildirim ayarları" hint="Hangi durumlarda haber verelim?" href="/bildirim-ayarlari" />
             </>
           ) : status === 'unavailable' ? (
             <MenuRow icon="log-in-outline" label="Giriş yap / Üye ol" hint="Demo modunda kapalı — Supabase bağlantısı gerekir" href="/hesap" />
@@ -60,7 +65,15 @@ export default function DahaTab() {
           )}
           <MenuRow icon="bookmark-outline" label="Takip ettiklerin" hint="Üyeler, konular ve kategoriler" href="/takip" />
           <MenuRow icon="location-outline" label="Buluşmalar" hint="Maç günü buluşmaları ve ortak yolculuklar" href="/bulusmalar" />
-          <MenuRow icon="notifications-outline" label="Bildirimler" hint="Yanıtlar, bahsetmeler ve maç uyarıları" soon />
+          {status !== 'signedOut' ? (
+            <MenuRow
+              icon="notifications-outline"
+              label="Bildirimler"
+              hint="Yanıtlar, bahsetmeler ve maç uyarıları"
+              href="/bildirimler"
+              count={unreadLabel(unread)}
+            />
+          ) : null}
           <MenuRow icon="search-outline" label="Forumda ara" href="/ara" />
           <MenuRow icon="create-outline" label="Konu Aç" href="/konu-ac" />
         </View>

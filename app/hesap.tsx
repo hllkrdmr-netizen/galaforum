@@ -148,6 +148,13 @@ export default function AccountScreen() {
           {profile ? <ProfileDetails username={profile.username} /> : null}
 
           <View style={styles.section}>
+            <SectionHeader title="Bildirimler" />
+            <View style={styles.row}>
+              <Button label="Bildirim ayarları" variant="secondary" icon="notifications-outline" onPress={() => router.push('/bildirim-ayarlari')} />
+            </View>
+          </View>
+
+          <View style={styles.section}>
             <SectionHeader overline="Güvenlik" title="Oturum" />
             <View style={styles.row}>
               <Button label="Şifreyi değiştir" variant="secondary" icon="key-outline" onPress={() => router.push('/yeni-sifre')} />
@@ -160,7 +167,7 @@ export default function AccountScreen() {
               Hesabı sil
             </AppText>
             <AppText variant="small" tone="muted">
-              E-posta adresin, oturumların, beğenilerin, anket oyların ve şikâyet kayıtların kalıcı olarak silinir. Tartışma
+              E-posta adresin, oturumların, beğenilerin, anket oyların, bildirimlerin ve şikâyet kayıtların kalıcı olarak silinir. Tartışma
               bütünlüğü için yazdığın mesajlar “silinmiş üye” adıyla kalır. Bu işlem geri alınamaz.
             </AppText>
             <TextField

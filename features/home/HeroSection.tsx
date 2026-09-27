@@ -7,6 +7,7 @@ import { AppText, Button, IconButton, Pill } from '../../components/ui';
 import { colors, fonts, gradients, layout, spacing } from '../../constants/theme';
 import { useResponsive } from '../../hooks/useResponsive';
 import { SearchBar } from '../forum/SearchBar';
+import { NotificationBell } from '../notifications/NotificationBell';
 
 const LION = require('../../assets/images/lion-hero-realistic.png');
 
@@ -73,7 +74,10 @@ export function HeroSection({ isDemo }: { isDemo: boolean }) {
             </AppText>
             {isDemo ? <Pill label="Demo" tone="neutral" /> : null}
           </View>
-          <IconButton icon="person-circle-outline" label="Profil ve diğer seçenekler" onPress={() => router.push('/daha')} />
+          <View style={styles.topActions}>
+            <NotificationBell />
+            <IconButton icon="person-circle-outline" label="Profil ve diğer seçenekler" onPress={() => router.push('/daha')} />
+          </View>
         </View>
 
         {/* Copy + actions */}
@@ -124,6 +128,7 @@ const styles = StyleSheet.create({
   stage: { width: '100%', alignSelf: 'center', paddingBottom: spacing.xxxl, minHeight: 460, zIndex: 2 },
   lionWrap: { position: 'absolute' },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 2 },
+  topActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   brandDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.gold },
   copy: { zIndex: 2, width: '100%' },

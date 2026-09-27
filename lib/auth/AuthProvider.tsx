@@ -6,6 +6,8 @@ import { AppState, Platform } from 'react-native';
 
 import { invalidateQueries } from '../../hooks/useForumQuery';
 import type { AuthorSummary, UserRole } from '../../types/forum';
+import { notifications } from '../../services/notifications';
+import { disablePushOnThisDevice } from '../push';
 import { getSupabase } from '../supabase';
 import {
   AuthError,
@@ -89,8 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(next);
       setStatus(next ? 'signedIn' : 'signedOut');
       void loadProfile(next?.user.id);
-      // Per-user data (likes, votes) must be refetched when the identity changes.
+      // Per-user data (likes, votes, inbox) must be refetched when the identity changes.
       invalidateQueries('forum:');
+      invalidateQueries('notif:');
     });
 
     // Native apps: only refresh tokens while in the foreground (recommended by Supabase).
@@ -146,6 +149,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       async signOut() {
         const client = requireClient(sb);
+        // Stop pushes to this device for the member who is leaving (no-op if push was never enabled).
+        await disablePushOnThisDevice(notifications);
         const { error } = await client.auth.signOut();
         if (error) throw mapAuthError(error);
       },
