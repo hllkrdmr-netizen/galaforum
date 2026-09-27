@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "GalaForum",
+    "slug": "galaforum",
+    "version": "0.1.0",
+    "orientation": "default",
+    "scheme": "galaforum",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/images/icon.png",
+    "backgroundColor": "#0B0507",
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-lion.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0B0507"
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.hllkrdmr.galaforum"
+    },
+    "android": {
+      "package": "com.hllkrdmr.galaforum",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#12050A"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/images/favicon.png",
+      "name": "GalaForum — Daima Galatasaray",
+      "themeColor": "#0B0507",
+      "backgroundColor": "#0B0507"
+    },
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
