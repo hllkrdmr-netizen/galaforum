@@ -1,7 +1,7 @@
 import type { Category } from '../types/forum';
 
 /**
- * The 11 main GalaForum categories (default structure).
+ * The 12 main GalaForum categories (default structure).
  * `icon` is an Ionicons glyph name. Slugs are stable identifiers shared with the database seed.
  */
 export const DEFAULT_CATEGORIES: Category[] = [
@@ -70,12 +70,20 @@ export const DEFAULT_CATEGORIES: Category[] = [
     sortOrder: 8,
   },
   {
+    id: 'cat-diger-branslar',
+    slug: 'diger-branslar',
+    name: 'Diğer Branşlar',
+    description: 'Voleybol, yüzme, atletizm ve diğer branşlardan haberler ve tartışmalar.',
+    icon: 'fitness-outline',
+    sortOrder: 9,
+  },
+  {
     id: 'cat-altyapi',
     slug: 'altyapi-akademi',
     name: 'Altyapı / Akademi',
     description: 'Genç yetenekler, akademi takımları ve A takıma yükselenler.',
     icon: 'school-outline',
-    sortOrder: 9,
+    sortOrder: 10,
   },
   {
     id: 'cat-tribun',
@@ -83,7 +91,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     name: 'Taraftar & Tribün',
     description: 'Tribün kültürü, koreografiler, besteler ve deplasman hatıraları.',
     icon: 'megaphone-outline',
-    sortOrder: 10,
+    sortOrder: 11,
   },
   {
     id: 'cat-serbest',
@@ -91,7 +99,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     name: 'Serbest',
     description: 'Futbol dışı sohbetler ve konu dışı her şey — saygı çerçevesinde.',
     icon: 'chatbubbles-outline',
-    sortOrder: 11,
+    sortOrder: 12,
   },
 ];
 

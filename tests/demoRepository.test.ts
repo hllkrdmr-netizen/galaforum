@@ -3,10 +3,10 @@ import { test } from 'node:test';
 
 import { buildDemoState, createDemoRepository } from '../services/forum/demoRepository';
 
-test('categories expose stats for all 11 categories', async () => {
+test('categories expose stats for all 12 categories', async () => {
   const repo = createDemoRepository(buildDemoState());
   const cats = await repo.getCategories();
-  assert.equal(cats.length, 11);
+  assert.equal(cats.length, 12);
   const taktik = cats.find((c) => c.slug === 'mac-taktik')!;
   assert.equal(taktik.stats.topicCount, 2);
   assert.ok(taktik.stats.postCount >= taktik.stats.topicCount);
