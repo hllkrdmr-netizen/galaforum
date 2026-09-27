@@ -1,6 +1,11 @@
-import { StyleSheet, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { router } from 'expo-router';
+import { forum } from '../../services/forum';
+import { invalidateQueries } from '../../hooks/useForumQuery';
+import { interactionStyles } from './Interactions';
+import { StyleSheet, TextInput, View } from 'react-native';
 
-import { AppText, Avatar, Pill } from '../../components/ui';
+import { AppText, Avatar, Button, Pill } from '../../components/ui';
 import { colors, radius, spacing } from '../../constants/theme';
 import { formatDateTime, formatRelativeTime } from '../../lib/format';
 import type { Post, UserRole } from '../../types/forum';
@@ -22,7 +27,21 @@ function blocks(body: string) {
   return out;
 }
 
-export function PostItem({ post, index }: { post: Post; index: number }) {
+export function PostItem({ post, index, onQuote }: { post: Post; index: number; onQuote?: (post: Post) => void }) {
+  const [reporting, setReporting] = useState(false);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const pending = useRef(false);
+  const [message, setMessage] = useState('');
+  const act = async (report: boolean) => {
+    if (pending.current) return;
+    pending.current = true; setBusy(true); setMessage('');
+    try {
+      if (report) { await forum.report(post.id, reason); setReporting(false); setReason(''); setMessage('Bildirimin alındı.'); }
+      else { await forum.setLike(post.id, !post.likedByMe); invalidateQueries(`forum:topic:${post.topicId}:`); }
+    } catch (e) { setMessage(e instanceof Error ? e.message : 'İşlem tamamlanamadı.'); }
+    finally { pending.current = false; setBusy(false); }
+  };
   const role = post.author.role ? ROLE_LABEL[post.author.role] : undefined;
   return (
     <View style={[styles.wrap, post.isOpeningPost && styles.opening]} accessibilityLabel={`${post.author.username}, ${formatDateTime(post.createdAt)}`}>
@@ -42,6 +61,7 @@ export function PostItem({ post, index }: { post: Post; index: number }) {
         </AppText>
       </View>
       <View style={styles.body}>
+        {post.quote && <View style={styles.quote}><AppText tone="gold">{post.quote.username} yazdı:</AppText><AppText variant="small">{post.quote.body}</AppText></View>}
         {blocks(post.body).map((b, i) =>
           b.quote ? (
             <View key={i} style={styles.quote}>
@@ -51,11 +71,25 @@ export function PostItem({ post, index }: { post: Post; index: number }) {
             </View>
           ) : (
             <AppText key={i} variant="body" style={styles.para} selectable>
-              {b.text}
+              {b.text.split(/(@[a-zA-Z0-9_]{3,24})/g).map((part, n) => {
+                const user = post.mentions?.find(u => `@${u.username}`.toLowerCase() === part.toLowerCase());
+                return user ? <AppText key={n} tone="gold" accessibilityRole="link" onPress={() => router.push({ pathname: '/ara', params: { q: user.username } })}>{part}</AppText> : part;
+              })}
             </AppText>
           ),
         )}
       </View>
+      <View style={interactionStyles.actions}>
+        <Button variant="ghost" label={`${post.likedByMe ? 'Beğeniyi kaldır' : 'Beğen'} (${post.likeCount ?? 0})`} disabled={busy} onPress={() => void act(false)} />
+        {onQuote && <Button variant="ghost" label="Alıntıla" onPress={() => onQuote(post)} />}
+        <Button variant="ghost" label="Bildir" disabled={busy} onPress={() => setReporting(!reporting)} />
+      </View>
+      {reporting && <View style={interactionStyles.box}>
+        <TextInput accessibilityLabel="Bildirim gerekçesi" value={reason} onChangeText={setReason} maxLength={1000} multiline placeholder="Bildirim gerekçesi (en az 5 karakter)" placeholderTextColor={colors.textSubtle} style={interactionStyles.input} />
+        <Button label="Bildirimi gönder" loading={busy} onPress={() => void act(true)} />
+        <Button variant="ghost" label="Vazgeç" onPress={() => setReporting(false)} />
+      </View>}
+      {message ? <AppText accessibilityRole="alert" variant="small">{message}</AppText> : null}
     </View>
   );
 }

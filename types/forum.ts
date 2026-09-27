@@ -50,10 +50,15 @@ export interface Post {
   body: string;
   createdAt: string;
   isOpeningPost: boolean;
+  quote?: { id: string; body: string; username: string } | null;
+  likeCount?: number;
+  likedByMe?: boolean;
+  mentions?: AuthorSummary[];
 }
 
 export interface TopicDetail extends TopicSummary {
   posts: Post[];
+  nextCursor: number | null;
 }
 
 /** The most recent post anywhere on the forum (real post, not just the newest topic). */
@@ -72,6 +77,7 @@ export interface SearchResults {
 }
 
 export interface CreateTopicInput {
+  poll?: PollInput;
   categorySlug: string;
   title: string;
   body: string;
@@ -82,3 +88,7 @@ export interface ForumOverview {
   postCount: number;
   memberCount: number;
 }
+
+export interface PollInput { question: string; options: string[] }
+export interface Poll { id: string; question: string; options: { id: string; label: string; votes: number }[]; myOptionId: string | null; totalVotes: number }
+export interface ReplyInput { topicId: string; body: string; quotePostId?: string }

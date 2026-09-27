@@ -1,3 +1,5 @@
+import { requireText, validatePage, validatePoll } from '../../lib/interactions';
+import type { Poll } from '../../types/forum';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { CATEGORY_BY_SLUG, DEFAULT_CATEGORIES } from '../../constants/categories';
@@ -109,6 +111,18 @@ function fail(error: { message: string; code?: string } | null, fallback: string
 }
 
 export function createSupabaseRepository(sb: SupabaseClient): ForumRepository {
+  async function mutate(name: string, args: Record<string, unknown>) {
+    const { data: session, error: authError } = await sb.auth.getSession();
+    if (authError) fail(authError, 'Oturum doğrulanamadı.');
+    if (!session.session) throw new ForumError('Bu işlem için giriş yapmalısın.', 'auth_required');
+    const { data, error } = await sb.rpc(name, args);
+    if (error) {
+      if (error.code === '22023') throw new ForumError('Geçersiz işlem veya kilitli konu.', 'validation');
+      if (error.code === 'P0002') throw new ForumError('Kayıt bulunamadı.', 'not_found');
+      fail(error, 'İşlem tamamlanamadı. Lütfen tekrar dene.');
+    }
+    return data;
+  }
   return {
     mode: 'supabase',
 
@@ -207,21 +221,29 @@ export function createSupabaseRepository(sb: SupabaseClient): ForumRepository {
       return { items: rows.slice(0, pageSize), nextCursor: hasMore ? cursor + pageSize : null };
     },
 
-    async getTopic(id): Promise<TopicDetail | null> {
+    async getTopic(id, cursor = 0, pageSize = 20): Promise<TopicDetail | null> {
+      validatePage(cursor, pageSize);
       const { data, error } = await sb.from('topics').select(TOPIC_SELECT).eq('id', id).maybeSingle();
       if (error) fail(error, 'Konu yüklenemedi.');
       if (!data) return null;
-      const { data: posts, error: postErr } = await sb
-        .from('posts')
-        .select(POST_SELECT)
-        .eq('topic_id', id)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: true })
-        .limit(200);
+      const { data: page, error: postErr } = await sb.rpc('forum_post_page', { p_topic_id: id, p_offset: cursor, p_size: pageSize });
       if (postErr) fail(postErr, 'Mesajlar yüklenemedi.');
-      void sb.rpc('increment_topic_view', { p_topic_id: id });
-      return { ...toTopic(data as unknown as TopicRow), posts: ((posts ?? []) as unknown as PostRow[]).map(toPost) };
+      const posts = (page ?? []) as Post[];
+      if (cursor === 0) void sb.rpc('increment_topic_view', { p_topic_id: id }).then(() => undefined, () => undefined);
+      return { ...toTopic(data as unknown as TopicRow), posts: posts.slice(0, pageSize), nextCursor: posts.length > pageSize ? cursor + pageSize : null };
     },
+    async reply(input) {
+      const id = await mutate('forum_reply', { p_topic_id: input.topicId, p_body: requireText(input.body, 1, 10000), p_quote_id: input.quotePostId ?? null });
+      return { id: String(id) };
+    },
+    async setLike(postId, liked) { await mutate('forum_set_like', { p_post_id: postId, p_liked: liked }); },
+    async report(postId, reason) { await mutate('forum_report', { p_post_id: postId, p_reason: requireText(reason, 5, 1000) }); },
+    async getPoll(topicId) {
+      const { data, error } = await sb.rpc('forum_poll', { p_topic_id: topicId });
+      if (error) fail(error, 'Anket yüklenemedi.');
+      return data as Poll | null;
+    },
+    async vote(pollId, optionId) { await mutate('forum_vote', { p_poll_id: pollId, p_option_id: optionId }); },
 
     async search(query, limit = 20): Promise<SearchResults> {
       const q = query.trim();
@@ -258,14 +280,16 @@ export function createSupabaseRepository(sb: SupabaseClient): ForumRepository {
     },
 
     async createTopic(input) {
+      validatePoll(input.poll);
       const errors = validateTopicInput(input);
       if (hasErrors(errors)) throw new ForumError(Object.values(errors).filter(Boolean)[0]!, 'validation');
       const { data: session } = await sb.auth.getSession();
       if (!session.session) throw new ForumError('Konu açmak için giriş yapmalısın.', 'auth_required');
-      const { data, error } = await sb.rpc('create_topic', {
+      const { data, error } = await sb.rpc('forum_create_topic', {
         p_category_slug: input.categorySlug,
         p_title: input.title.trim(),
         p_body: input.body.trim(),
+        p_poll: input.poll ?? null,
       });
       if (error) fail(error, 'Konu oluşturulamadı.');
       return { id: String(data) };

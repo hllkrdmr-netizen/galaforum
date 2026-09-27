@@ -1,3 +1,5 @@
+import { mentionNames, requireText, validatePage, validatePoll } from '../../lib/interactions';
+import type { Poll } from '../../types/forum';
 import { CATEGORY_BY_SLUG, DEFAULT_CATEGORIES } from '../../constants/categories';
 import { matchesAll, MIN_QUERY_LENGTH, queryTerms } from '../../lib/search';
 import { hasErrors, validateTopicInput } from '../../lib/validation';
@@ -17,6 +19,7 @@ import { ForumError } from './repository';
 import type { ForumRepository, Page } from './repository';
 
 interface StoredPost {
+  quotePostId?: string;
   id: string;
   topicId: string;
   authorId: string;
@@ -68,6 +71,24 @@ export function buildDemoState(now: number = Date.now()): DemoState {
 const byDateAsc = (a: { createdAt: string }, b: { createdAt: string }) => a.createdAt.localeCompare(b.createdAt);
 
 export function createDemoRepository(state: DemoState = buildDemoState()): ForumRepository {
+  let serial = 0;
+  let lastStamp = 0;
+  const nextStamp = () => (lastStamp = Math.max(Date.now(), lastStamp + 1));
+  const uniqueId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${++serial}`;
+  const likes = new Set<string>();
+  const reports = new Map<string, string>();
+  const polls = new Map<string, Poll>();
+  const openTopic = (id: string) => {
+    const t = state.topics.find(t => t.id === id);
+    if (!t) throw new ForumError('Konu bulunamadı.', 'not_found');
+    if (t.locked) throw new ForumError('Bu konu kilitli.', 'validation');
+    return t;
+  };
+  const findPost = (id: string) => {
+    const p = state.posts.find(p => p.id === id);
+    if (!p) throw new ForumError('Mesaj bulunamadı.', 'not_found');
+    return p;
+  };
   const userById = (id: string): AuthorSummary =>
     state.users.find((u) => u.id === id) ?? { id, username: 'silinmiş_üye', role: 'user' };
 
@@ -104,6 +125,9 @@ export function createDemoRepository(state: DemoState = buildDemoState()): Forum
     body: p.body,
     createdAt: p.createdAt,
     isOpeningPost: p.id === openingId,
+    likeCount: likes.has(p.id) ? 1 : 0, likedByMe: likes.has(p.id),
+    mentions: state.users.filter(u => mentionNames(p.body).includes(u.username.toLowerCase())),
+    quote: p.quotePostId ? (() => { const q = findPost(p.quotePostId!); return { id: q.id, body: q.body, username: userById(q.authorId).username }; })() : null,
   });
 
   const allSummaries = () => state.topics.map(summarize);
@@ -179,12 +203,13 @@ export function createDemoRepository(state: DemoState = buildDemoState()): Forum
       return { items, nextCursor: next < sorted.length ? next : null };
     },
 
-    async getTopic(id): Promise<TopicDetail | null> {
+    async getTopic(id, cursor = 0, pageSize = 20): Promise<TopicDetail | null> {
+      validatePage(cursor, pageSize);
       const topic = state.topics.find((t) => t.id === id);
       if (!topic) return null;
       const posts = postsOf(id);
       const openingId = posts[0]?.id;
-      return { ...summarize(topic), posts: posts.map((p) => toPost(p, openingId)) };
+      return { ...summarize(topic), posts: posts.slice(cursor, cursor + pageSize).map((p) => toPost(p, openingId)), nextCursor: cursor + pageSize < posts.length ? cursor + pageSize : null };
     },
 
     async search(query, limit = 20): Promise<SearchResults> {
@@ -217,11 +242,35 @@ export function createDemoRepository(state: DemoState = buildDemoState()): Forum
       return { query, topics, posts, categories, users };
     },
 
+    async reply(input) {
+      openTopic(input.topicId);
+      const body = requireText(input.body, 1, 10000);
+      if (input.quotePostId && findPost(input.quotePostId).topicId !== input.topicId) throw new ForumError('Alıntı bu konuya ait değil.', 'validation');
+      const id = uniqueId('p');
+      state.posts.push({ id, topicId: input.topicId, body, authorId: DEMO_GUEST.id, createdAt: new Date(nextStamp()).toISOString(), quotePostId: input.quotePostId });
+      return { id };
+    },
+    async setLike(postId, liked) { findPost(postId); if (liked) likes.add(postId); else likes.delete(postId); },
+    async report(postId, reason) { findPost(postId); reports.set(postId, requireText(reason, 5, 1000)); },
+    async getPoll(topicId) { const poll = polls.get(topicId); return poll ? { ...poll, options: poll.options.map(o => ({ ...o })) } : null; },
+    async vote(pollId, optionId) {
+      const entry = [...polls.entries()].find(([, p]) => p.id === pollId);
+      if (!entry) throw new ForumError('Anket bulunamadı.', 'not_found');
+      openTopic(entry[0]);
+      const p = entry[1];
+      if (!p.options.some(o => o.id === optionId)) throw new ForumError('Seçenek bulunamadı.', 'validation');
+      if (p.myOptionId === optionId) return;
+      if (p.myOptionId) p.options.find(o => o.id === p.myOptionId)!.votes--;
+      else p.totalVotes++;
+      p.options.find(o => o.id === optionId)!.votes++;
+      p.myOptionId = optionId;
+    },
     async createTopic(input: CreateTopicInput) {
+      validatePoll(input.poll);
       const errors = validateTopicInput(input);
       if (hasErrors(errors)) throw new ForumError(Object.values(errors).filter(Boolean)[0]!, 'validation');
-      const stamp = Date.now();
-      const id = `t-local-${stamp.toString(36)}`;
+      const stamp = nextStamp();
+      const id = uniqueId('t-local');
       state.topics.push({
         id,
         categorySlug: input.categorySlug,
@@ -232,12 +281,13 @@ export function createDemoRepository(state: DemoState = buildDemoState()): Forum
         locked: false,
       });
       state.posts.push({
-        id: `p-local-${stamp.toString(36)}`,
+        id: uniqueId('p-local'),
         topicId: id,
         authorId: DEMO_GUEST.id,
         body: input.body.trim(),
         createdAt: new Date(stamp).toISOString(),
       });
+      if (input.poll) polls.set(id, { id: uniqueId('poll'), question: input.poll.question.trim(), options: input.poll.options.map(label => ({ id: uniqueId('option'), label: label.trim(), votes: 0 })), myOptionId: null, totalVotes: 0 });
       return { id };
     },
   };

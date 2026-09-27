@@ -1,4 +1,6 @@
 import type {
+  Poll,
+  ReplyInput,
   CategoryWithStats,
   CreateTopicInput,
   ForumOverview,
@@ -25,7 +27,12 @@ export interface ForumRepository {
   getLatestPost(): Promise<LatestPost | null>;
   getTrendingTopics(limit?: number): Promise<TopicSummary[]>;
   getCategoryTopics(slug: string, cursor?: number, pageSize?: number): Promise<Page<TopicSummary>>;
-  getTopic(id: string): Promise<TopicDetail | null>;
+  getTopic(id: string, cursor?: number, pageSize?: number): Promise<TopicDetail | null>;
+  reply(input: ReplyInput): Promise<{ id: string }>;
+  setLike(postId: string, liked: boolean): Promise<void>;
+  report(postId: string, reason: string): Promise<void>;
+  getPoll(topicId: string): Promise<Poll | null>;
+  vote(pollId: string, optionId: string): Promise<void>;
   search(query: string, limit?: number): Promise<SearchResults>;
   createTopic(input: CreateTopicInput): Promise<{ id: string }>;
 }

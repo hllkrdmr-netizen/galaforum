@@ -1,3 +1,5 @@
+import { PollEditor } from '../features/forum/Interactions';
+import type { PollInput } from '../types/forum';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -17,13 +19,14 @@ export default function CreateTopicScreen() {
   const params = useLocalSearchParams<{ kategori?: string }>();
   const [categorySlug, setCategorySlug] = useState(params.kategori && CATEGORY_BY_SLUG[params.kategori] ? params.kategori : '');
   const [title, setTitle] = useState('');
+  const [poll, setPoll] = useState<PollInput>();
   const [body, setBody] = useState('');
   const [errors, setErrors] = useState<TopicValidationErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const publish = async () => {
-    const input = { categorySlug, title, body };
+    const input = { categorySlug, title, body, poll };
     const v = validateTopicInput(input);
     setErrors(v);
     setSubmitError(null);
@@ -110,6 +113,8 @@ export default function CreateTopicScreen() {
             <AppText variant="caption" tone="danger">{errors.body ?? ''}</AppText>
             <AppText variant="caption" tone="subtle">{body.trim().length}</AppText>
           </View>
+
+          <PollEditor value={poll} onChange={setPoll} />
 
           {submitError ? (
             <View style={styles.alert} accessibilityRole="alert">
