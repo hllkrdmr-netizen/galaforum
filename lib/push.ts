@@ -3,13 +3,9 @@ import { Platform } from 'react-native';
 import type { PushPlatform } from '../types/notification';
 
 /**
- * Push foundations. The app talks to push only through a PushProvider so the native module can be
- * plugged in without touching screens:
- *
- *   npx expo install expo-notifications expo-device
- *   // app/_layout.tsx (once): setPushProvider(createExpoPushProvider())   — see docs/PHASE7.md
- *
- * Until then the default provider reports "unsupported" and the settings screen says so honestly.
+ * Push abstraction. Screens talk to push only through a PushProvider. On iOS/Android the Expo provider
+ * (features/app/PushBridge.tsx, registered at startup) is used; on web, and before registration, the
+ * default provider reports "unsupported" and the settings screen says so honestly.
  */
 export type PushStatus = 'unsupported' | 'undetermined' | 'denied' | 'granted';
 

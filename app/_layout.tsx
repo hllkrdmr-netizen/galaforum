@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { colors } from '../constants/theme';
+import { PushBridge } from '../features/app/PushBridge';
 import { AuthProvider } from '../lib/auth/AuthProvider';
 
 // Expo Router renders this when a screen throws while rendering.
@@ -18,6 +19,7 @@ export default function RootLayout() {
     <SafeAreaProvider style={{ flex: 1, backgroundColor: colors.bg }}>
       <AuthProvider>
         <StatusBar style="light" />
+        <PushBridge />
         <Stack
           screenOptions={{
             headerShown: false,

@@ -67,14 +67,35 @@ EAS derlemelerinde bu değerleri `eas env:create` ile ya da expo.dev → Environ
   - Uygulamada ve mağaza açıklamasında “bağımsız taraftar platformu” ibaresi var.
   - Apple 5.2 (fikri mülkiyet) incelemesinde isim sorun çıkarırsa alternatif bir ad hazır tut.
 
-### Anlık bildirim (isteğe bağlı, 1.0 için şart değil)
+### Anlık bildirim
 
-- ☐ `npx expo install expo-notifications expo-device`
-- ☐ `docs/PHASE7.md` içindeki `createExpoPushProvider` adımlarını uygula.
-- ☐ APNs ve FCM anahtarlarını EAS’e ekle.
-- ☐ Gönderici Edge Function’ı yaz ve her dakika çalışacak şekilde zamanla.
+Uygulama tarafı hazır: izin isteme, cihaz anahtarını kaydetme, girişte yeniden kaydetme, bildirime dokununca
+ilgili ekranı açma (uygulama kapalıyken de) ve Android bildirim kanalı + aslan bildirim ikonu
+(`features/app/PushBridge.tsx`, `app.json` → `expo-notifications`). Gönderici: `supabase/functions/push-dispatch`.
 
-Bunlar yapılmadan uygulama içi bildirimler yine çalışır; ayarlar ekranı anlık bildirimin kapalı olduğunu açıkça söyler.
+- ☐ `eas init`: proje kimliği (`extra.eas.projectId`) olmadan Expo anahtar veremez; ayarlar ekranı o zamana kadar
+  “bu sürümde kapalı” der.
+- ☐ `eas credentials`: iOS için APNs anahtarı, Android için FCM (Firebase) hizmet hesabı anahtarı.
+- ☐ Gönderici fonksiyonu yayınla ve sırrı tanımla:
+  ```bash
+  supabase functions deploy push-dispatch --no-verify-jwt
+  supabase secrets set PUSH_CRON_SECRET=<uzun-rastgele-değer>
+  ```
+- ☐ Her dakika çalıştır (Database → Extensions’ta `pg_cron` ve `pg_net` açık olmalı):
+  ```sql
+  select cron.schedule('push-dispatch', '* * * * *', $$
+    select net.http_post(
+      url := 'https://<proje-ref>.supabase.co/functions/v1/push-dispatch',
+      headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-secret', '<aynı-sır>'),
+      body := '{}'::jsonb);
+  $$);
+  select cron.schedule('prune-notifications', '17 3 * * *', $$ select public.prune_notifications(); $$);
+  ```
+- ☐ Gerçek cihazda dene: Expo Go uzaktan bildirim almaz; `eas build --profile preview` ile kurulan sürüm gerekir.
+
+Gönderici, Expo’nun “DeviceNotRegistered” dediği cihazları kapatır ve hiçbir cihaza ulaşamayan bildirimleri
+“failed” işaretler. Teslim makbuzları (receipts) henüz kontrol edilmiyor; ilk sürüm için yeterli.
+Bunlar yapılmadan da uygulama içi bildirimler çalışır.
 
 ### Derleme ve mağaza
 
@@ -180,7 +201,8 @@ Staging Supabase projesiyle, iOS’ta ve Android’de ayrı ayrı yapılmalı.
 
 ## 5. Bilinen sınırlamalar (1.0 sonrası)
 
-- **Anlık bildirim:** Göndermek için paket ve gönderici iş gerekiyor (bölüm 2).
+- **Anlık bildirim:** Kod hazır; EAS projesi, APNs/FCM anahtarları ve gönderici fonksiyonun yayına alınması
+  sunucu aşamasında (bölüm 2).
 - **Hata raporlama:** Çökme ve hata raporlama servisi (ör. Sentry) yok. Uygulamada Türkçe bir hata ekranı var ama hatalar merkezi olarak toplanmıyor.
 - **Eksik geliştirme araçları:** ESLint ve TanStack Query, bu projenin kurulduğu ortamda paket deposu kapalı olduğu için eklenmedi. `hooks/useForumQuery` aynı işi gören küçük bir karşılık.
 - **Arama:** Tür başına en fazla 50 sonuç gösteriyor, sayfalama yok.

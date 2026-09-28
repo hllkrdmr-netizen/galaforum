@@ -44,6 +44,11 @@
 
 ## Anlık bildirim (push) — şu an ne var, ne eksik
 
+> **Güncelleme (29 Eylül 2026):** Aşağıdaki iki eksik giderildi. `expo-notifications` kuruldu ve uygulamaya bağlandı
+> (`features/app/PushBridge.tsx`); gönderici işi `supabase/functions/push-dispatch` olarak yazıldı ve testlerle
+> doğrulandı. Yayına alma adımları `docs/RELEASE.md` → “Anlık bildirim” bölümünde. Bu bölümün geri kalanı Faz 7’deki
+> durumu anlatır.
+
 Anlık bildirim altyapısı hazır, ancak bildirim henüz telefona ulaşmıyor. Bunun iki nedeni var:
 
 1. **Uygulamada `expo-notifications` paketi yok.** Bu ortamda npm kayıt deposuna erişim kapalı olduğu için paketi ekleyemedim.
