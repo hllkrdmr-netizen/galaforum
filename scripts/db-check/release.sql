@@ -9,14 +9,12 @@ declare
   allowed_write_policies text[] := array[
     'lineups:members delete own lineups',
     'lineups:members save own lineups',
-    'match_events:staff manage match events',
-    'matches:staff manage matches',
     'profiles:users update own profile',
     'squad_players:staff manage squad'
   ];
   -- SECURITY DEFINER functions anonymous visitors may call (read-only public data).
   anon_definer text[] := array[
-    'active_members', 'community_profile', 'forum_poll', 'forum_profile', 'increment_topic_view',
+    'active_members', 'community_profile', 'forum_poll', 'forum_post_page', 'forum_post_position', 'forum_profile', 'increment_topic_view',
     'is_staff', 'match_reaction_counts', 'username_available',
     -- trigger functions: not callable outside a trigger
     'handle_new_user', 'on_post_inserted'

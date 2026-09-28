@@ -15,6 +15,7 @@ bunlar bu ortamdan yapılamaz.
 | Bildirim kutusu ve tercihleri | ✅ Faz 7 — telefona anlık bildirim ☐ (aşağıda) |
 | Moderasyon (şikâyet, yaptırım, rol, kayıt, engelleme) | ✅ Faz 8 |
 | Hata ekranı, hukuki sayfalar, kayıtta onay, yayın kontrolleri | ✅ Faz 9 |
+| Maç yönetimi (maç ekle, canlı durum, olaylar, skor), mesaja doğrudan bağlantı, kaldırılan mesaj yer tutucusu, küfür uyarısı | ✅ 1.0 öncesi ek paket (aşağıda) |
 
 ## 2. Yayından önce zorunlu adımlar
 
@@ -123,6 +124,8 @@ npm test                             # birim testleri
 psql -f scripts/db-check/supabase-shim.sql
 # ardından migration'lar sırayla, sonra:
 psql -f scripts/db-check/phase4.sql … phase8.sql
+psql -f scripts/db-check/match_admin.sql
+psql -f scripts/db-check/post_links.sql
 psql -f scripts/db-check/release.sql
 # Web duman testi (demo modu):
 npx expo export -p web --output-dir dist/web-qa
@@ -152,10 +155,12 @@ Staging Supabase projesiyle, iOS’ta ve Android’de ayrı ayrı yapılmalı.
    - 20’den fazla yanıtta sayfalama.
    - Arama filtreleri.
    - Kilitli konuya yanıt yazılamıyor mu?
-3. **Maç:**
-   - Moderatör hesabıyla maç ekle: otomatik maç konusu açılıyor mu?
-   - Maçı “canlı” yap: bildirim ve canlı skor güncelleniyor mu (realtime)?
-   - Gol olayı ekle, tepki ver (3 saniye sınırı), ilk 11 kur ve paylaş.
+3. **Maç (moderatör: Maç sekmesi → Maç yönetimi):**
+   - Yeni maç ekle: otomatik maç konusu açılıyor mu?
+   - Maçı “Canlı” yap: skor 0–0 ve “Maç başladı” bildirimi geliyor mu, canlı oda anında güncelleniyor mu (realtime)?
+   - Gol, kendi kalesine gol ve kart gir: skor doğru değişiyor mu? Yanlış olayı sil: skor geri alınıyor mu?
+   - Devre arası → Canlı (46') → Bitti: olaylar ve maç sonu bildirimi geliyor mu? Moderasyon → Kayıt’ta işlemler görünüyor mu?
+   - Üye olarak: tepki ver (3 saniye sınırı), ilk 11 kur ve paylaş.
 4. **Topluluk:** Takip et / bırak, buluşma aç, katıl, kontenjan dolunca katılım kapanıyor mu, iptal, haritada aç.
 5. **Bildirimler:**
    - Yanıt, bahsetme, beğeni ve takip ikinci bir hesaptan geliyor mu? Zil sayacı canlı güncelleniyor mu?
@@ -179,10 +184,29 @@ Staging Supabase projesiyle, iOS’ta ve Android’de ayrı ayrı yapılmalı.
 - **Hata raporlama:** Çökme ve hata raporlama servisi (ör. Sentry) yok. Uygulamada Türkçe bir hata ekranı var ama hatalar merkezi olarak toplanmıyor.
 - **Eksik geliştirme araçları:** ESLint ve TanStack Query, bu projenin kurulduğu ortamda paket deposu kapalı olduğu için eklenmedi. `hooks/useForumQuery` aynı işi gören küçük bir karşılık.
 - **Arama:** Tür başına en fazla 50 sonuç gösteriyor, sayfalama yok.
-- **Konu bağlantıları:** Bir mesaja doğrudan atlanamıyor.
-- **Otomatik küfür filtresi yok.**
-- **Maç yönetimi:** Maç ekleme ve güncelleme denetim kaydına düşmüyor.
+- **Küfür denetimi:** Yalnızca gönderimden önce uyarı veriyor (“Yine de gönder” mümkün). Sunucu tarafında otomatik
+  işaretleme yok; son karar şikâyet ve moderasyonda.
+- **Demo modu:** Kaldırılan mesajlar demoda yer tutucu bırakmadan kaybolur (gerçek veritabanında yer tutucu gösterilir).
 - **Web paketi:**
   - Web çıktısı yaklaşık 6.9 MB (ikon fontları dahil; yalnızca kullanılanlar indirilir).
   - Ana JS dosyası 2.3 MB ve sıkıştırılmamış.
   - Aslan görseli web’de WebP (0.5 MB), uygulamada PNG olarak yükleniyor.
+
+## 6. 1.0 öncesi ek paket (2026-09-28)
+
+- **Maç yönetimi** (`/mac-yonetimi`, moderatör ve yöneticiler; Maç sekmesi, canlı oda başlığı ve Daha menüsünden):
+  - maç ekleme ve bilgileri düzenleme (turnuva, takımlar, tarih/saat, stat),
+  - durum: Başlamadı / Canlı / Devre arası / Bitti / Ertelendi; dakika için −1, +1, +5,
+  - olay girişi: gol, penaltı golü, kendi kalesine gol, kaçan penaltı, sarı/kırmızı kart, değişiklik, VAR,
+  - goller skoru kendiliğinden günceller, olay silinince geri alınır; “Skoru elle düzelt” yalnızca düzeltme için,
+  - başlama, devre arası ve maç sonu olayları durum değişince otomatik eklenir; bildirimler Faz 7 tetikleyicileriyle gider.
+  - Veritabanı: `20260928120000_match_admin.sql`. Moderatörlerin tablolara doğrudan yazma yetkisi kaldırıldı; her
+    değişiklik `mod_*` RPC’lerinden geçer ve Moderasyon → Kayıt’a işlenir.
+- **Mesaja doğrudan bağlantı:** `/konu/<id>?mesaj=<mesaj-id>` konuyu doğru sayfada açar, mesaja kaydırır ve kısa süre
+  vurgular. Yanıt, alıntı, bahsetme ve beğeni bildirimleri ile arama sonuçları bu bağlantıyı kullanır.
+- **Kaldırılan mesaj yer tutucusu:** Moderatörün kaldırdığı mesajın yerinde “Bu mesaj … kaldırıldı” yazar; numaralar
+  kaymaz. İçerik, yazar ve beğeniler sunucudan hiç gönderilmez (`20260928130000_post_links.sql`).
+- **Küfür ve hakaret uyarısı:** Yanıt ve konu gönderilmeden önce Türkçe küfür/hakaret kontrolü (`lib/profanity.ts`);
+  büyük/küçük harf, Türkçe karakter, 0/1/@ gibi taklitler, s.i.k.t.i.r gibi araya işaret koyma ve harf uzatma
+  yakalanır. “sıkı, sıkıştırdı, götürdü, sikke, amatör” gibi masum kelimeler yakalanmaz (testlerde kontrol ediliyor).
+

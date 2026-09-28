@@ -12,6 +12,7 @@ import { RestrictionNotice } from '../features/moderation/ModParts';
 import { useMyRestriction } from '../hooks/useModeration';
 import { CategoryIcon } from '../features/forum/CategoryIcon';
 import { invalidateQueries } from '../hooks/useForumQuery';
+import { findProfanity, profanityWarning } from '../lib/profanity';
 import { POST_BODY_MAX, TOPIC_TITLE_MAX, hasErrors, validateTopicInput } from '../lib/validation';
 import type { TopicValidationErrors } from '../lib/validation';
 import { ForumError, forum } from '../services/forum';
@@ -30,12 +31,17 @@ export default function CreateTopicScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const publish = async () => {
+  const [rude, setRude] = useState<string[] | null>(null);
+  const publish = async (force = false) => {
     const input = { categorySlug, title, body, poll };
     const v = validateTopicInput(input);
     setErrors(v);
     setSubmitError(null);
     if (hasErrors(v)) return;
+    // Soft check: ask once before publishing insults/profanity (moderators still decide).
+    const hits = force ? [] : findProfanity(`${title}\n${body}`);
+    if (hits.length) return setRude(hits);
+    setRude(null);
     setSubmitting(true);
     try {
       const { id } = await forum.createTopic(input);
@@ -149,8 +155,15 @@ export default function CreateTopicScreen() {
             </View>
           ) : null}
 
+          {rude ? (
+            <View style={[styles.alert, { gap: spacing.sm }]} accessibilityRole="alert">
+              <AppText variant="small" tone="danger">{profanityWarning(rude)}</AppText>
+              <Button label="Yine de yayımla" variant="ghost" onPress={() => void publish(true)} />
+            </View>
+          ) : null}
+
           <View style={styles.actions}>
-            <Button label="Yayımla" icon="send" size="lg" loading={submitting} onPress={publish} />
+            <Button label="Yayımla" icon="send" size="lg" loading={submitting} onPress={() => void publish()} />
             <Button label="Vazgeç" variant="ghost" size="lg" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
           </View>
           {forum.mode === 'demo' ? (

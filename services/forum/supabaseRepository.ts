@@ -239,6 +239,11 @@ export function createSupabaseRepository(sb: SupabaseClient): ForumRepository {
       if (cursor === 0) void sb.rpc('increment_topic_view', { p_topic_id: id }).then(() => undefined, () => undefined);
       return { ...toTopic(data as unknown as TopicRow), posts: posts.slice(0, pageSize), nextCursor: posts.length > pageSize ? cursor + pageSize : null };
     },
+    async getPostPosition(topicId, postId) {
+      const { data, error } = await sb.rpc('forum_post_position', { p_topic_id: topicId, p_post_id: postId });
+      if (error) fail(error, 'Mesaj bulunamadı.');
+      return typeof data === 'number' ? data : null;
+    },
     async reply(input) {
       const id = await mutate('forum_reply', { p_topic_id: input.topicId, p_body: requireText(input.body, 1, 10000), p_quote_id: input.quotePostId ?? null });
       return { id: String(id) };

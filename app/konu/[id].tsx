@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Post } from '../../types/forum';
 import { ReplyComposer, TopicPoll } from '../../features/forum/Interactions';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,15 +17,18 @@ import { FollowTopicButton } from '../../features/community/FollowButtons';
 import { forum } from '../../services/forum';
 import { RestrictionNotice } from '../../features/moderation/ModParts';
 import { TopicModTools } from '../../features/moderation/TopicModTools';
-import { BlockedPost } from '../../features/moderation/BlockedPost';
+import { BlockedPost, RemovedPost } from '../../features/moderation/BlockedPost';
 import { useBlocks, useMyRestriction } from '../../hooks/useModeration';
 
 export default function TopicScreen() {
-  const { id = '' } = useLocalSearchParams<{ id: string }>();
-  return <TopicContent key={id} id={id} />;
+  const { id = '', mesaj } = useLocalSearchParams<{ id: string; mesaj?: string }>();
+  return <TopicContent key={`${id}:${mesaj ?? ''}`} id={id} target={mesaj ? String(mesaj) : null} />;
 }
 
-function TopicContent({ id }: { id: string }) {
+const PAGE = 20;
+
+/** `target`: a post id from a deep link (?mesaj=…); the thread opens on its page and scrolls to it. */
+function TopicContent({ id, target }: { id: string; target: string | null }) {
   const [cursor, setCursor] = useState(0);
   const [quote, setQuote] = useState<Post | null>(null);
   const list = useRef<FlatList<Post>>(null);
@@ -34,6 +37,37 @@ function TopicContent({ id }: { id: string }) {
   const { isBlocked } = useBlocks();
   const restriction = useMyRestriction();
   const [revealed, setRevealed] = useState<ReadonlySet<string>>(new Set());
+  const position = useForumQuery(`forum:pos:${id}:${target ?? ''}`, () => forum.getPostPosition(id, target!), { enabled: Boolean(target), staleTime: 60_000 });
+  const [jumpState, setJumpState] = useState<'page' | 'scroll' | 'done'>(target ? 'page' : 'done');
+  const [highlight, setHighlight] = useState<string | null>(target);
+
+  // 1) open the page that contains the post
+  useEffect(() => {
+    if (jumpState !== 'page' || position.isLoading) return;
+    if (position.data == null) {
+      setJumpState('done');
+      setHighlight(null);
+      return;
+    }
+    setCursor(Math.floor(position.data / PAGE) * PAGE);
+    setJumpState('scroll');
+  }, [jumpState, position.isLoading, position.data]);
+
+  // 2) scroll to it once that page is on screen, then fade the highlight
+  // (timers live in a ref so the state change below does not cancel them)
+  const loadedPosts = topic.data?.posts;
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  useEffect(() => {
+    if (jumpState !== 'scroll' || !loadedPosts || !target) return;
+    const index = loadedPosts.findIndex((p) => p.id === target);
+    if (index < 0) return;
+    setJumpState('done');
+    timers.current.push(
+      setTimeout(() => list.current?.scrollToIndex({ index, viewPosition: 0.15, animated: true }), 250),
+      setTimeout(() => setHighlight(null), 4500),
+    );
+  }, [jumpState, loadedPosts, target]);
 
   if (topic.isLoading) {
     return (
@@ -102,9 +136,20 @@ function TopicContent({ id }: { id: string }) {
             <TopicPoll topicId={id} locked={t.isLocked} />
           </Container>
         }
+        onScrollToIndexFailed={(info) => {
+          list.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false });
+          setTimeout(() => list.current?.scrollToIndex({ index: info.index, viewPosition: 0.15, animated: true }), 300);
+        }}
         renderItem={({ item, index }) => (
-          <View style={{ width: '100%', maxWidth: layout.maxContentWidth, alignSelf: 'center', paddingHorizontal: gutter }}>
-            {isBlocked(item.author.id) && !revealed.has(item.id) ? (
+          <View
+            style={[
+              { width: '100%', maxWidth: layout.maxContentWidth, alignSelf: 'center', paddingHorizontal: gutter },
+              highlight === item.id && styles.highlight,
+            ]}
+          >
+            {item.removed ? (
+              <RemovedPost index={cursor + index} />
+            ) : isBlocked(item.author.id) && !revealed.has(item.id) ? (
               <BlockedPost username={item.author.username} onReveal={() => setRevealed((r) => new Set(r).add(item.id))} />
             ) : (
               <PostItem post={item} index={cursor + index} onQuote={t.isLocked || restriction ? undefined : (post) => { setQuote(post); list.current?.scrollToEnd({ animated: true }); }} />
@@ -133,4 +178,5 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.md, marginTop: spacing.md },
   stat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   locked: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
+  highlight: { backgroundColor: 'rgba(217,164,65,0.08)', borderLeftWidth: 3, borderLeftColor: colors.gold },
 });

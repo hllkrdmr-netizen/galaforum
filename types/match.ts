@@ -67,3 +67,34 @@ export interface SquadPlayer {
   number: number | null;
   position: 'GK' | 'DF' | 'MF' | 'FW';
 }
+
+// ---------------------------------------------------------------- staff match administration
+export interface MatchInput {
+  competition: string;
+  homeTeam: string;
+  awayTeam: string;
+  kickoffAt: string;
+  venue: string;
+}
+
+export interface MatchPatch {
+  competition?: string;
+  homeTeam?: string;
+  awayTeam?: string;
+  kickoffAt?: string;
+  venue?: string;
+  status?: MatchStatus;
+  minute?: number | null;
+  homeScore?: number | null;
+  awayScore?: number | null;
+}
+
+export interface NewMatchEvent {
+  minute: number;
+  extraMinute: number | null;
+  type: MatchEventType;
+  /** Team of the player involved (an own goal counts for the other side). */
+  side: 'home' | 'away' | null;
+  player: string | null;
+  detail: string | null;
+}

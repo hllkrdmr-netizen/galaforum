@@ -1,4 +1,5 @@
--- Phase 5 behaviour checks. Expected errors: RLS on member match insert, rate_limited, invalid_reaction, permission denied (reactions table, anon react), lineup RLS/check, match_not_live.
+-- Phase 5 behaviour checks. Expected errors: member match insert denied, rate_limited, invalid_reaction, member score update denied, permission denied (reactions table, anon react), lineup RLS/check, match_not_live.
+-- Since 20260928120000_match_admin.sql staff write matches through audited mod_* RPCs (see match_admin.sql check).
 \set ON_ERROR_STOP 1
 \pset footer off
 insert into auth.users (id, email, raw_user_meta_data) values
@@ -15,11 +16,12 @@ insert into public.matches (competition, home_team, away_team, kickoff_at) value
 
 -- moderator creates a match -> topic auto-created
 select set_config('request.jwt.claim.sub','aaaaaaaa-0000-0000-0000-000000000001',false);
-insert into public.matches (competition, home_team, away_team, kickoff_at, venue) values ('Süper Lig','Galatasaray','Fenerbahçe', now() + interval '2 days', 'RAMS Park') returning id as mid, topic_id as tid \gset
+select public.mod_create_match('Süper Lig','Galatasaray','Fenerbahçe', now() + interval '2 days', 'RAMS Park') as mid \gset
+select topic_id as tid from public.matches where id = :'mid' \gset
 select t.title, c.slug, (select count(*) from public.posts p where p.topic_id=t.id and p.is_opening_post) as opening from public.topics t join public.categories c on c.id=t.category_id where t.id=:'tid';
 select left(body, 60) as opening_body from public.posts where topic_id=:'tid';
-insert into public.match_events (match_id, minute, type, side, player) values (:'mid', 23, 'goal', 'home', 'Oyuncu A');
-update public.matches set status='live', minute=23, home_score=1, away_score=0 where id=:'mid';
+select public.mod_update_match(:'mid', '{"status":"live","minute":23}');
+select public.mod_add_match_event(:'mid', 23, null, 'goal', 'home', 'Oyuncu A') is not null as goal_added;
 select status, minute, home_score, updated_at > created_at as touched from public.matches where id=:'mid';
 
 -- member reacts; rate limit; counts via RPC

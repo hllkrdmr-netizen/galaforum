@@ -205,6 +205,12 @@ export function createDemoRepository(state: DemoState = buildDemoState()): Forum
       return { items, nextCursor: next < sorted.length ? next : null };
     },
 
+    async getPostPosition(topicId, postId) {
+      if (!state.topics.some((t) => t.id === topicId)) return null;
+      const i = postsOf(topicId).findIndex((p) => p.id === postId);
+      return i < 0 ? null : i;
+    },
+
     async getTopic(id, cursor = 0, pageSize = 20): Promise<TopicDetail | null> {
       validatePage(cursor, pageSize);
       const topic = state.topics.find((t) => t.id === id);

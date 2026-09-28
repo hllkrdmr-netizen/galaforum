@@ -30,6 +30,7 @@ ROUTES = [
     ('/konu-ac', 'Konu'),
     ('/kategori/mac-taktik', 'Maç & Taktik'),
     ('/konu/t-cift-pivot', 'Derbilerde çift pivot'),
+    ('/konu/t-cift-pivot?mesaj=p-pivot-4', 'Derbide ilk 20 dakika'),
     ('/mac/m-canli', 'Trabzonspor'),
     ('/ilk-11', 'İlk 11'),
     ('/bulusmalar', 'Buluşma'),
@@ -45,6 +46,8 @@ ROUTES = [
     ('/bildirim-ayarlari', 'Bildirim ayarları'),
     ('/moderasyon', 'Moderasyon'),
     ('/moderasyon/uye/taktikdefteri', 'taktikdefteri'),
+    ('/mac-yonetimi', 'Maç yönetimi'),
+    ('/mac-yonetimi/m-canli', 'Maçı yönet'),
     ('/bilgi/kurallar', 'Topluluk kuralları'),
     ('/bilgi/kosullar', 'Kullanım koşulları'),
     ('/bilgi/gizlilik', 'KVKK'),
@@ -199,6 +202,41 @@ def main():
             page.wait_for_timeout(1500)
             assert page.get_by_role('checkbox').count() == 1, 'terms checkbox missing'
 
+        def run_match(page):
+            page.goto(base + '/mac-yonetimi')
+            page.wait_for_timeout(1500)
+            page.get_by_role('button', name='Yeni maç').first.click()
+            page.get_by_label('Deplasman').first.fill('Göztepe')
+            page.get_by_label('Tarih').first.fill('15.10.2026')
+            page.get_by_label('Saat').first.fill('19:00')
+            page.get_by_role('button', name='Maçı ekle').first.click()
+            page.wait_for_timeout(1500)
+            assert '/mac-yonetimi/' in page.url, f'did not open the new match ({page.url})'
+            page.get_by_role('button', name='Canlı', exact=True).first.click()
+            page.wait_for_timeout(1000)
+            page.get_by_role('button', name='Galatasaray', exact=True).first.click()
+            page.get_by_label('Dakika').first.fill('12')
+            page.get_by_role('button', name='Olayı ekle').first.click()
+            page.wait_for_timeout(1200)
+            assert page.get_by_label('Skor 1 – 0').count() > 0, 'goal did not update the score'
+
+        def profanity_warning(page):
+            page.goto(base + '/konu/t-cift-pivot')
+            page.wait_for_timeout(1500)
+            page.get_by_label('Yanıt mesajı').first.fill('amk bu hakem')
+            page.get_by_role('button', name='Yanıtı gönder').first.click()
+            page.wait_for_timeout(600)
+            assert page.get_by_role('button', name='Yine de gönder').count() > 0, 'no profanity warning'
+            page.get_by_role('button', name='Düzenle').first.click()
+            page.get_by_label('Yanıt mesajı').first.fill('Hakem bugün çok kötüydü.')
+            assert page.get_by_role('button', name='Yanıtı gönder').count() > 0
+
+        def deep_link(page):
+            page.goto(base + '/konu/t-cift-pivot?mesaj=p-pivot-4')
+            page.wait_for_timeout(2500)
+            scrolled = page.evaluate("() => Math.max(0, ...[...document.querySelectorAll('div')].map((e) => e.scrollTop))")
+            assert scrolled > 100, f'deep link did not scroll to the post (scrollTop {scrolled})'
+
         for name, fn in [
             ('konu aç', create_topic_and_reply),
             ('beğeni', like_and_quote),
@@ -206,6 +244,9 @@ def main():
             ('moderasyon', moderation),
             ('engelleme', block_member),
             ('kayıt onayı', signup_requires_terms),
+            ('maç yönetimi', run_match),
+            ('küfür uyarısı', profanity_warning),
+            ('mesaja bağlantı', deep_link),
         ]:
             flow(name, fn)
 

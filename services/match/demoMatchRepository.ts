@@ -1,4 +1,4 @@
-import { emptyReactions, validateLineup } from '../../lib/match';
+import { applyMatchPatch, emptyReactions, goalSide, milestoneEvent, validateLineup, validateMatchInput, validateNewEvent } from '../../lib/match';
 import type { Lineup, Match, MatchDetail, MatchEvent, ReactionCounts, ReactionType, SquadPlayer } from '../../types/match';
 import { ForumError } from '../forum/repository';
 import type { MatchRepository } from './repository';
@@ -140,24 +140,55 @@ export function createDemoMatchRepository(seed = buildDemoMatches(), clock: () =
     };
   };
 
+  // Staff edits "freeze" a demo match: from then on it no longer follows the demo clock.
+  const managed = new Map<string, { match: Match; events: MatchEvent[] }>();
+  let serial = 0;
+  const view = (id: string) => {
+    const m = managed.get(id);
+    if (m) return { match: { ...m.match }, events: m.events.map((e) => ({ ...e })) };
+    const s = seed.find((x) => x.id === id);
+    return s ? toMatch(s) : null;
+  };
+  const freeze = (id: string) => {
+    let m = managed.get(id);
+    if (!m) {
+      const v = view(id);
+      if (!v) throw new ForumError('Maç bulunamadı.', 'not_found');
+      m = v;
+      managed.set(id, m);
+    }
+    return m;
+  };
+  const sortEvents = (events: MatchEvent[]) =>
+    events.sort((a, b) => b.minute - a.minute || (b.extraMinute ?? 0) - (a.extraMinute ?? 0) || b.createdAt.localeCompare(a.createdAt));
+  const newEvent = (matchId: string, e: Omit<MatchEvent, 'id' | 'matchId' | 'createdAt'>): MatchEvent => ({
+    ...e,
+    id: `${matchId}-x${++serial}`,
+    matchId,
+    createdAt: new Date(clock() + serial).toISOString(),
+  });
+
   return {
     mode: 'demo',
 
     async listMatches() {
-      return seed.map((s) => toMatch(s).match).sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt));
+      const ids = [...new Set([...seed.map((s) => s.id), ...managed.keys()])];
+      return ids
+        .map((id) => view(id)?.match)
+        .filter((m): m is Match => Boolean(m))
+        .sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt));
     },
 
     async getMatch(id): Promise<MatchDetail | null> {
-      const s = seed.find((m) => m.id === id);
-      if (!s) return null;
-      const { match, events } = toMatch(s);
-      return { match, events, reactions: { ...(reactions.get(id) ?? emptyReactions()) } };
+      const v = view(id);
+      if (!v) return null;
+      return { match: v.match, events: v.events, reactions: { ...(reactions.get(id) ?? emptyReactions()) } };
     },
 
     async react(matchId, type: ReactionType) {
-      const s = seed.find((m) => m.id === matchId);
-      if (!s) throw new ForumError('Maç bulunamadı.', 'not_found');
-      const { match } = toMatch(s);
+      const v = view(matchId);
+      if (!v) throw new ForumError('Maç bulunamadı.', 'not_found');
+      const { match } = v;
       if (match.status !== 'live' && match.status !== 'halftime') throw new ForumError('Tepkiler yalnızca maç sırasında açık.', 'validation');
       const now = clock();
       if (now - lastReaction < 3000) throw new ForumError('Biraz yavaş: 3 saniyede bir tepki verebilirsin.', 'validation');
@@ -190,6 +221,69 @@ export function createDemoMatchRepository(seed = buildDemoMatches(), clock: () =
       // Demo clock advances every minute; refresh on a gentle interval.
       const timer = setInterval(onChange, 20_000);
       return () => clearInterval(timer);
+    },
+
+    async createMatch(input) {
+      const problem = validateMatchInput(input);
+      if (problem) throw new ForumError(problem, 'validation');
+      const id = `m-demo-${++serial}`;
+      managed.set(id, {
+        match: {
+          id,
+          competition: input.competition.trim(),
+          homeTeam: input.homeTeam.trim(),
+          awayTeam: input.awayTeam.trim(),
+          kickoffAt: new Date(input.kickoffAt).toISOString(),
+          venue: input.venue.trim(),
+          status: 'scheduled',
+          minute: null,
+          homeScore: null,
+          awayScore: null,
+          topicId: null,
+        },
+        events: [],
+      });
+      return { id };
+    },
+
+    async updateMatch(id, patch) {
+      const m = freeze(id);
+      const next = applyMatchPatch(m.match, patch);
+      if (next.homeTeam.trim().toLocaleLowerCase('tr-TR') === next.awayTeam.trim().toLocaleLowerCase('tr-TR')) {
+        throw new ForumError('Ev sahibi ve deplasman takımı aynı olamaz.', 'validation');
+      }
+      const milestone = milestoneEvent(m.match.status, next.status, m.match.minute);
+      if (milestone && !m.events.some((e) => e.type === milestone.type)) {
+        m.events.push(newEvent(id, { minute: milestone.minute, extraMinute: null, type: milestone.type, side: null, player: null, detail: null }));
+        sortEvents(m.events);
+      }
+      m.match = next;
+    },
+
+    async addEvent(matchId, event) {
+      const problem = validateNewEvent(event);
+      if (problem) throw new ForumError(problem, 'validation');
+      const m = freeze(matchId);
+      if (m.match.status === 'scheduled' || m.match.status === 'postponed') throw new ForumError('Olay eklemek için önce maçı başlat.', 'validation');
+      const e = newEvent(matchId, { ...event, player: event.player?.trim() || null, detail: event.detail?.trim() || null });
+      m.events.push(e);
+      sortEvents(m.events);
+      const scored = goalSide(event.type, event.side);
+      if (scored === 'home') m.match = { ...m.match, homeScore: (m.match.homeScore ?? 0) + 1, awayScore: m.match.awayScore ?? 0 };
+      if (scored === 'away') m.match = { ...m.match, awayScore: (m.match.awayScore ?? 0) + 1, homeScore: m.match.homeScore ?? 0 };
+      return { id: e.id };
+    },
+
+    async deleteEvent(eventId) {
+      const ids = [...new Set([...seed.map((s) => s.id), ...managed.keys()])];
+      const owner = ids.find((id) => view(id)?.events.some((e) => e.id === eventId));
+      if (!owner) throw new ForumError('Olay bulunamadı; sayfayı yenile.', 'not_found');
+      const m = freeze(owner);
+      const e = m.events.find((x) => x.id === eventId)!;
+      m.events = m.events.filter((x) => x.id !== eventId);
+      const scored = goalSide(e.type, e.side);
+      if (scored === 'home') m.match = { ...m.match, homeScore: Math.max(0, (m.match.homeScore ?? 0) - 1) };
+      if (scored === 'away') m.match = { ...m.match, awayScore: Math.max(0, (m.match.awayScore ?? 0) - 1) };
     },
   };
 }

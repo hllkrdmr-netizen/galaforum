@@ -94,7 +94,8 @@ test('every kind has a sentence and a destination', () => {
   assert.equal(describeNotification(make('badge', { actor: null }), 'ayse_gs').href, '/uye/ayse_gs');
   assert.equal(describeNotification(make('match_goal', { matchId: 'm1', actor: null })).href, '/mac/m1');
   assert.equal(describeNotification(make('meetup_join', { meetupId: 'bm1' })).href, '/bulusma/bm1');
-  assert.equal(describeNotification(make('reply')).href, '/konu/t1');
+  assert.equal(describeNotification(make('reply')).href, '/konu/t1?mesaj=p1', 'replies open at the post');
+  assert.equal(describeNotification(make('reply', { postId: null })).href, '/konu/t1');
 });
 
 test('match texts use the snapshot data', () => {
@@ -133,6 +134,7 @@ test('push taps open the right screen', () => {
   assert.equal(pushHref(null), '/bildirimler');
   assert.equal(pushHref({ kind: 'match_goal', matchId: 'm1', topicId: 't1' }), '/mac/m1');
   assert.equal(pushHref({ kind: 'reply', topicId: 't1' }), '/konu/t1');
+  assert.equal(pushHref({ kind: 'mention', topicId: 't1', postId: 'p9' }), '/konu/t1?mesaj=p9');
   assert.equal(pushHref({ kind: 'follow', actorUsername: 'burak_gs' }), '/uye/burak_gs');
   assert.equal(pushHref({ kind: 'meetup_cancelled', meetupId: 'bm1' }), '/bulusma/bm1');
   assert.ok(EXPO_TOKEN_PATTERN.test('ExponentPushToken[abcdefghij123456]'));

@@ -54,6 +54,8 @@ export interface Post {
   likeCount?: number;
   likedByMe?: boolean;
   mentions?: AuthorSummary[];
+  /** Removed by a moderator: shown as a placeholder (no body or author). */
+  removed?: boolean;
 }
 
 export interface TopicDetail extends TopicSummary {

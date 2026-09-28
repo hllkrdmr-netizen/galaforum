@@ -5,6 +5,7 @@ import { colors, radius, spacing } from '../../constants/theme';
 import { invalidateQueries, useForumQuery } from '../../hooks/useForumQuery';
 import { forum } from '../../services/forum';
 import type { PollInput, Post } from '../../types/forum';
+import { findProfanity, profanityWarning } from '../../lib/profanity';
 
 export const interactionStyles = StyleSheet.create({
   input: { color: colors.text, backgroundColor: colors.bgRaised, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: radius.md, padding: spacing.md, minHeight: 48, fontSize: 16 },
@@ -30,8 +31,13 @@ export function ReplyComposer({ topicId, quote, clearQuote, onSent }: { topicId:
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
   const [error, setError] = useState('');
-  const submit = async () => {
+  const [rude, setRude] = useState<string[] | null>(null);
+  const submit = async (force = false) => {
     if (pending.current) return;
+    // Soft check: ask once before sending insults/profanity (moderators still decide).
+    const hits = force ? [] : findProfanity(body);
+    if (hits.length) { setRude(hits); return; }
+    setRude(null);
     pending.current = true; setBusy(true); setError('');
     try {
       await forum.reply({ topicId, body, quotePostId: quote?.id });
@@ -42,10 +48,16 @@ export function ReplyComposer({ topicId, quote, clearQuote, onSent }: { topicId:
   return <View style={interactionStyles.box}>
     <AppText variant="h2">Yanıt yaz</AppText>
     {quote && <View><AppText tone="gold">{quote.author.username} mesajına alıntı</AppText><AppText numberOfLines={3}>{quote.body}</AppText><Button variant="ghost" label="Alıntıyı kaldır" onPress={clearQuote} /></View>}
-    <TextInput accessibilityLabel="Yanıt mesajı" multiline editable={!busy} value={body} onChangeText={setBody} maxLength={10000} placeholder="Yanıtın… Bir üyeden @kullanici_adi ile bahset." placeholderTextColor={colors.textSubtle} style={[interactionStyles.input, { minHeight: 130, textAlignVertical: 'top' }]} />
+    <TextInput accessibilityLabel="Yanıt mesajı" multiline editable={!busy} value={body} onChangeText={(v) => { setBody(v); setRude(null); }} maxLength={10000} placeholder="Yanıtın… Bir üyeden @kullanici_adi ile bahset." placeholderTextColor={colors.textSubtle} style={[interactionStyles.input, { minHeight: 130, textAlignVertical: 'top' }]} />
     <AppText variant="caption" tone="subtle">{body.length}/10000 · @bahsetmeler kayıtlı kullanıcılarla eşleştirilir.</AppText>
     {error ? <AppText accessibilityRole="alert" tone="danger">{error}</AppText> : null}
-    <Button label="Yanıtı gönder" loading={busy} disabled={!body.trim()} onPress={() => void submit()} />
+    {rude ? <View style={{ gap: spacing.sm }} accessibilityRole="alert">
+      <AppText variant="small" tone="danger">{profanityWarning(rude)}</AppText>
+      <View style={interactionStyles.actions}>
+        <Button label="Düzenle" variant="secondary" onPress={() => setRude(null)} />
+        <Button label="Yine de gönder" variant="ghost" onPress={() => void submit(true)} />
+      </View>
+    </View> : <Button label="Yanıtı gönder" loading={busy} disabled={!body.trim()} onPress={() => void submit()} />}
     {forum.mode === 'demo' && <AppText variant="caption" tone="subtle">Demo: yanıtlar, beğeniler, bildirimler ve oylar yalnızca bu oturumda saklanır.</AppText>}
   </View>;
 }

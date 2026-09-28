@@ -225,7 +225,7 @@ export default function SearchScreen() {
                     <PressableScale
                       key={post.id}
                       accessibilityRole="link"
-                      onPress={() => router.push(`/konu/${topic.id}`)}
+                      onPress={() => router.push(`/konu/${topic.id}?mesaj=${post.id}`)}
                       style={({ hovered }) => [styles.postRow, hovered && { backgroundColor: colors.surfaceHover }]}
                     >
                       <AppText variant="bodyStrong" numberOfLines={1}>

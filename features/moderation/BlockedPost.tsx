@@ -21,6 +21,21 @@ export function BlockedPost({ username, onReveal }: { username: string; onReveal
   );
 }
 
+/** Stand-in for a post a moderator removed (keeps the thread's numbering and context). */
+export function RemovedPost({ index }: { index: number }) {
+  return (
+    <View style={styles.row} accessibilityLabel="Bu mesaj moderatör tarafından kaldırıldı">
+      <Ionicons name="shield-outline" size={16} color={colors.textSubtle} />
+      <AppText variant="small" tone="subtle" style={{ flex: 1, fontStyle: 'italic' }}>
+        Bu mesaj topluluk kurallarına aykırı olduğu için moderatör tarafından kaldırıldı.
+      </AppText>
+      <AppText variant="caption" tone="subtle">
+        #{index + 1}
+      </AppText>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',

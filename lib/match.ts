@@ -5,7 +5,10 @@ import type {
   Match,
   MatchEvent,
   MatchEventType,
+  MatchInput,
+  MatchPatch,
   MatchStatus,
+  NewMatchEvent,
   ReactionCounts,
   ReactionType,
 } from '../types/match';
@@ -224,4 +227,74 @@ export function nextMatch(matches: Match[], now: number = Date.now()): Match | n
       .filter((m) => m.status === 'scheduled' && new Date(m.kickoffAt).getTime() >= now - 3 * 3_600_000)
       .sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt))[0] ?? null
   );
+}
+
+// ---------------------------------------------------------------- staff administration
+// Mirrors supabase/migrations/20260928120000_match_admin.sql so demo mode behaves like the server.
+
+/** Event types a moderator adds by hand (kickoff / half-time / full-time come from status changes). */
+export const ADMIN_EVENT_TYPES: MatchEventType[] = ['goal', 'penalty_goal', 'own_goal', 'penalty_miss', 'yellow', 'red', 'sub', 'var'];
+
+const NEEDS_SIDE: ReadonlySet<MatchEventType> = new Set(['goal', 'own_goal', 'penalty_goal', 'penalty_miss', 'yellow', 'red', 'sub']);
+
+export function eventNeedsSide(type: MatchEventType): boolean {
+  return NEEDS_SIDE.has(type);
+}
+
+/** Which side the event scores for: goals for their side, an own goal for the other side, otherwise none. */
+export function goalSide(type: MatchEventType, side: 'home' | 'away' | null): 'home' | 'away' | null {
+  if (type === 'goal' || type === 'penalty_goal') return side;
+  if (type === 'own_goal') return side === 'home' ? 'away' : side === 'away' ? 'home' : null;
+  return null;
+}
+
+export const STATUS_OPTIONS: Array<{ status: MatchStatus; label: string }> = [
+  { status: 'scheduled', label: 'Başlamadı' },
+  { status: 'live', label: 'Canlı' },
+  { status: 'halftime', label: 'Devre arası' },
+  { status: 'finished', label: 'Bitti' },
+  { status: 'postponed', label: 'Ertelendi' },
+];
+
+/** Applies a patch with the server's status rules (score/minute reset or defaulted). */
+export function applyMatchPatch(m: Match, patch: MatchPatch): Match {
+  const n: Match = { ...m, ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)) };
+  if (n.status === 'scheduled' || n.status === 'postponed') {
+    return { ...n, minute: null, homeScore: null, awayScore: null };
+  }
+  n.homeScore = n.homeScore ?? 0;
+  n.awayScore = n.awayScore ?? 0;
+  if (n.status === 'live') n.minute = m.status === 'halftime' && patch.minute === undefined ? 46 : (n.minute ?? 1);
+  else if (n.status === 'halftime') n.minute = 45;
+  else if (n.status === 'finished') n.minute = null;
+  return n;
+}
+
+/** Milestone event the server adds when the status changes (null when none). */
+export function milestoneEvent(from: MatchStatus, to: MatchStatus, minute: number | null): { type: MatchEventType; minute: number } | null {
+  if (from === to) return null;
+  if (to === 'live' && from === 'scheduled') return { type: 'kickoff', minute: 1 };
+  if (to === 'halftime') return { type: 'halftime', minute: 45 };
+  if (to === 'finished') return { type: 'fulltime', minute: Math.max(90, minute ?? 90) };
+  return null;
+}
+
+export function validateMatchInput(input: MatchInput): string | null {
+  const len = (s: string) => s.trim().length;
+  if (len(input.competition) < 2 || len(input.competition) > 80) return 'Turnuva adı 2–80 karakter olmalı.';
+  if (len(input.homeTeam) < 2 || len(input.homeTeam) > 60 || len(input.awayTeam) < 2 || len(input.awayTeam) > 60) return 'Takım adları 2–60 karakter olmalı.';
+  if (input.homeTeam.trim().toLocaleLowerCase('tr-TR') === input.awayTeam.trim().toLocaleLowerCase('tr-TR')) return 'Ev sahibi ve deplasman takımı aynı olamaz.';
+  if (input.venue.length > 120) return 'Stat adı en fazla 120 karakter olabilir.';
+  const t = new Date(input.kickoffAt).getTime();
+  if (Number.isNaN(t)) return 'Geçerli bir tarih ve saat gir.';
+  return null;
+}
+
+export function validateNewEvent(e: NewMatchEvent): string | null {
+  if (!Number.isInteger(e.minute) || e.minute < 0 || e.minute > 130) return 'Dakika 0–130 arasında olmalı.';
+  if (e.extraMinute !== null && (!Number.isInteger(e.extraMinute) || e.extraMinute < 1 || e.extraMinute > 30)) return 'Uzatma dakikası 1–30 arasında olmalı.';
+  if (eventNeedsSide(e.type) && !e.side) return 'Olayın hangi takıma ait olduğunu seç.';
+  if ((e.player ?? '').length > 80) return 'Oyuncu adı en fazla 80 karakter olabilir.';
+  if ((e.detail ?? '').length > 200) return 'Açıklama en fazla 200 karakter olabilir.';
+  return null;
 }

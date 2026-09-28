@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { emptyReactions, validateLineup } from '../../lib/match';
+import { emptyReactions, validateLineup, validateMatchInput, validateNewEvent } from '../../lib/match';
 import type { Formation, Match, MatchDetail, MatchEvent, ReactionCounts, SquadPlayer } from '../../types/match';
 import { ForumError } from '../forum/repository';
 import type { MatchRepository } from './repository';
@@ -64,8 +64,22 @@ function fail(error: { message: string; code?: string }, fallback: string): neve
   if (error.message.includes('rate_limited')) throw new ForumError('Biraz yavaş: 3 saniyede bir tepki verebilirsin.', 'validation');
   if (error.message.includes('banned')) throw new ForumError('Hesabın yasaklı olduğu için bu işlemi yapamazsın.', 'validation');
   if (error.message.includes('match_not_live')) throw new ForumError('Tepkiler yalnızca maç sırasında açık.', 'validation');
+  const admin = MATCH_ADMIN_MESSAGES.find(([k]) => error.message.includes(k));
+  if (admin) throw new ForumError(admin[1], 'validation');
   throw new ForumError(fallback, 'unknown');
 }
+
+/** Server codes from the match-admin RPCs. */
+export const MATCH_ADMIN_MESSAGES: Array<[string, string]> = [
+  ['not_allowed', 'Bu işlem için yetkin yok.'],
+  ['same_teams', 'Ev sahibi ve deplasman takımı aynı olamaz.'],
+  ['invalid_date', 'Maç tarihi son 30 gün ile önümüzdeki 400 gün arasında olmalı.'],
+  ['invalid_patch', 'Geçersiz güncelleme.'],
+  ['match_not_started', 'Olay eklemek için önce maçı başlat.'],
+  ['side_required', 'Olayın hangi takıma ait olduğunu seç.'],
+  ['match_not_found', 'Maç bulunamadı.'],
+  ['event_not_found', 'Olay bulunamadı; sayfayı yenile.'],
+];
 
 export function createSupabaseMatchRepository(sb: SupabaseClient): MatchRepository {
   return {
@@ -152,6 +166,51 @@ export function createSupabaseMatchRepository(sb: SupabaseClient): MatchReposito
         clearInterval(timer);
         void sb.removeChannel(channel);
       };
+    },
+
+    async createMatch(input) {
+      const problem = validateMatchInput(input);
+      if (problem) throw new ForumError(problem, 'validation');
+      const { data, error } = await sb.rpc('mod_create_match', {
+        p_competition: input.competition.trim(),
+        p_home_team: input.homeTeam.trim(),
+        p_away_team: input.awayTeam.trim(),
+        p_kickoff_at: input.kickoffAt,
+        p_venue: input.venue.trim(),
+      });
+      if (error) fail(error, 'Maç oluşturulamadı.');
+      return { id: String(data) };
+    },
+
+    async updateMatch(id, patch) {
+      const keys: Record<string, string> = {
+        competition: 'competition', homeTeam: 'home_team', awayTeam: 'away_team', kickoffAt: 'kickoff_at', venue: 'venue',
+        status: 'status', minute: 'minute', homeScore: 'home_score', awayScore: 'away_score',
+      };
+      const body = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined).map(([k, v]) => [keys[k] ?? k, v]));
+      const { error } = await sb.rpc('mod_update_match', { p_match_id: id, p_patch: body });
+      if (error) fail(error, 'Maç güncellenemedi.');
+    },
+
+    async addEvent(matchId, event) {
+      const problem = validateNewEvent(event);
+      if (problem) throw new ForumError(problem, 'validation');
+      const { data, error } = await sb.rpc('mod_add_match_event', {
+        p_match_id: matchId,
+        p_minute: event.minute,
+        p_extra_minute: event.extraMinute,
+        p_type: event.type,
+        p_side: event.side,
+        p_player: event.player,
+        p_detail: event.detail,
+      });
+      if (error) fail(error, 'Olay eklenemedi.');
+      return { id: String(data) };
+    },
+
+    async deleteEvent(eventId) {
+      const { error } = await sb.rpc('mod_delete_match_event', { p_event_id: eventId });
+      if (error) fail(error, 'Olay silinemedi.');
     },
   };
 }

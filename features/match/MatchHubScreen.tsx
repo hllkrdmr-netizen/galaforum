@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText, Button, Container, EmptyState, ErrorState, Pill, SectionHeader, SkeletonRow } from '../../components/ui';
 import { colors, spacing } from '../../constants/theme';
 import { invalidateQueries, useForumQuery } from '../../hooks/useForumQuery';
+import { useStaff } from '../../hooks/useModeration';
 import { isLive, nextMatch } from '../../lib/match';
 import { forum } from '../../services/forum';
 import { matches } from '../../services/match';
@@ -14,6 +15,7 @@ import { LiveMatchCard, MatchRow, NextMatchCard } from './MatchParts';
 
 export function MatchHubScreen() {
   const insets = useSafeAreaInsets();
+  const { isStaff } = useStaff();
   const list = useForumQuery('match:list', () => matches.listMatches(), { staleTime: 20_000 });
   const talk = useForumQuery('forum:category:mac-taktik:hub', () => forum.getCategoryTopics('mac-taktik', 0, 12));
   const [refreshing, setRefreshing] = useState(false);
@@ -55,9 +57,12 @@ export function MatchHubScreen() {
               <Pill label="Demo fikstür" />
             </View>
           ) : null}
-          <AppText variant="displaySm" accessibilityRole="header">
-            Maç
-          </AppText>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md }}>
+            <AppText variant="displaySm" accessibilityRole="header">
+              Maç
+            </AppText>
+            {isStaff ? <Button label="Maç yönetimi" variant="secondary" icon="settings-outline" onPress={() => router.push('/mac-yonetimi')} /> : null}
+          </View>
         </Container>
       </View>
 

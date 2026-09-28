@@ -18,7 +18,11 @@ export type ModAction =
   | 'user_mute'
   | 'user_ban'
   | 'sanction_revoke'
-  | 'role_change';
+  | 'role_change'
+  | 'match_create'
+  | 'match_update'
+  | 'match_event_add'
+  | 'match_event_delete';
 
 export interface ReportEntry {
   reporter: string | null;
@@ -79,7 +83,7 @@ export interface HiddenTopic {
 export interface ModLogEntry {
   id: number;
   action: ModAction;
-  targetType: 'post' | 'topic' | 'user';
+  targetType: 'post' | 'topic' | 'user' | 'match';
   targetId: string;
   targetLabel: string;
   reason: string;
@@ -91,6 +95,13 @@ export interface ModLogEntry {
     kind?: SanctionKind;
     topicId?: string;
     reports?: number;
+    /** match_update: changed fields and resulting score; match_event_*: the event. */
+    fields?: string[];
+    score?: string | null;
+    type?: string;
+    minute?: number;
+    side?: 'home' | 'away' | null;
+    player?: string | null;
   };
   createdAt: string;
   actor: AuthorSummary | null;

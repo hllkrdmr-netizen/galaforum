@@ -43,6 +43,8 @@ export interface ForumRepository {
   /** Public member profile; null when the member does not exist or deleted the account. */
   getProfile(username: string): Promise<PublicProfile | null>;
   createTopic(input: CreateTopicInput): Promise<{ id: string }>;
+  /** 0-based position of a post in its topic (for deep links); null when not visible. */
+  getPostPosition(topicId: string, postId: string): Promise<number | null>;
 }
 
 export type ForumErrorCode = 'network' | 'auth_required' | 'validation' | 'not_found' | 'unknown';

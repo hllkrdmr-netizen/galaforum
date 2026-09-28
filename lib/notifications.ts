@@ -113,15 +113,17 @@ export function describeNotification(n: AppNotification, me?: string | null): No
   const d = n.data;
   const lead = actorLabel(n.actor, n.actorCount);
   const topicHref: Href | null = n.topicId ? `/konu/${n.topicId}` : null;
+  // Replies, quotes, mentions and likes open the thread at the post itself.
+  const postHref: Href | null = n.topicId && n.postId ? `/konu/${n.topicId}?mesaj=${n.postId}` : topicHref;
   switch (n.kind) {
     case 'reply':
-      return { icon: 'chatbubble-ellipses', tone: 'gold', lead, action: 'yanıt yazdı:', subject: d.topic_title ?? '', preview: d.excerpt ?? '', href: topicHref };
+      return { icon: 'chatbubble-ellipses', tone: 'gold', lead, action: 'yanıt yazdı:', subject: d.topic_title ?? '', preview: d.excerpt ?? '', href: postHref };
     case 'quote':
-      return { icon: 'chatbox', tone: 'gold', lead, action: 'mesajını alıntıladı:', subject: d.topic_title ?? '', preview: d.excerpt ?? '', href: topicHref };
+      return { icon: 'chatbox', tone: 'gold', lead, action: 'mesajını alıntıladı:', subject: d.topic_title ?? '', preview: d.excerpt ?? '', href: postHref };
     case 'mention':
-      return { icon: 'at', tone: 'gold', lead, action: 'senden bahsetti:', subject: d.topic_title ?? '', preview: d.excerpt ?? '', href: topicHref };
+      return { icon: 'at', tone: 'gold', lead, action: 'senden bahsetti:', subject: d.topic_title ?? '', preview: d.excerpt ?? '', href: postHref };
     case 'like':
-      return { icon: 'heart', tone: 'wine', lead, action: 'mesajını beğendi:', subject: d.topic_title ?? '', preview: d.excerpt ?? '', href: topicHref };
+      return { icon: 'heart', tone: 'wine', lead, action: 'mesajını beğendi:', subject: d.topic_title ?? '', preview: d.excerpt ?? '', href: postHref };
     case 'follow':
       return { icon: 'person-add', tone: 'gold', lead, action: 'seni takip etmeye başladı', subject: '', preview: '', href: n.actor ? `/uye/${n.actor.username}` : null };
     case 'category_topic':
@@ -272,6 +274,7 @@ export interface PushPayload {
   notificationId?: string;
   kind?: NotificationKind;
   topicId?: string | null;
+  postId?: string | null;
   matchId?: string | null;
   meetupId?: string | null;
   actorUsername?: string | null;
@@ -298,5 +301,6 @@ export function pushHref(data: PushPayload | null | undefined): Href {
     default:
       break;
   }
+  if (data.topicId && data.postId) return `/konu/${data.topicId}?mesaj=${data.postId}`;
   return data.topicId ? `/konu/${data.topicId}` : '/bildirimler';
 }

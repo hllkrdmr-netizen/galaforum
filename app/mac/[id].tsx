@@ -22,6 +22,7 @@ import { ReplyComposer, TopicPoll } from '../../features/forum/Interactions';
 import { PostItem } from '../../features/forum/PostItem';
 import { CountdownBlocks, EventTimeline, Scoreboard } from '../../features/match/MatchParts';
 import { invalidateQueries, useForumQuery } from '../../hooks/useForumQuery';
+import { useStaff } from '../../hooks/useModeration';
 import { isLive, matchTitle, REACTIONS } from '../../lib/match';
 import { forum } from '../../services/forum';
 import { matches } from '../../services/match';
@@ -33,6 +34,7 @@ export default function MatchRoomScreen() {
   const { id = '' } = useLocalSearchParams<{ id: string }>();
   const { width } = useWindowDimensions();
   const [tab, setTab] = useState<'akis' | 'yorumlar'>('akis');
+  const { isStaff } = useStaff();
   const detail = useForumQuery(`match:detail:${id}`, () => matches.getMatch(id), { staleTime: 10_000 });
   const match = detail.data?.match;
   const topicId = match?.topicId ?? null;
@@ -97,7 +99,12 @@ export default function MatchRoomScreen() {
     <View style={styles.screen}>
       <ScreenHeader
         title={live ? 'Canlı Maç Odası' : 'Maç Detayı'}
-        right={topicId ? <IconButton icon="open-outline" label="Tüm maç konusunu aç" onPress={() => router.push(`/konu/${topicId}`)} /> : null}
+        right={
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            {isStaff ? <IconButton icon="settings-outline" label="Maçı yönet" onPress={() => router.push(`/mac-yonetimi/${id}`)} /> : null}
+            {topicId ? <IconButton icon="open-outline" label="Tüm maç konusunu aç" onPress={() => router.push(`/konu/${topicId}`)} /> : null}
+          </View>
+        }
       />
       <ScrollView contentContainerStyle={{ paddingBottom: 80 }} keyboardShouldPersistTaps="handled">
         <Container style={{ paddingTop: spacing.xl, gap: spacing.xl, maxWidth: 860 }}>

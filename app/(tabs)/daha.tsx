@@ -77,6 +77,9 @@ export default function DahaTab() {
               count={openReports > 0 ? String(openReports) : undefined}
             />
           ) : null}
+          {isStaff ? (
+            <MenuRow icon="football-outline" label="Maç yönetimi" hint="Maç ekle, canlı skor ve olayları gir" href="/mac-yonetimi" />
+          ) : null}
           <MenuRow icon="bookmark-outline" label="Takip ettiklerin" hint="Üyeler, konular, kategoriler ve engellediklerin" href="/takip" />
           <MenuRow icon="location-outline" label="Buluşmalar" hint="Maç günü buluşmaları ve ortak yolculuklar" href="/bulusmalar" />
           {status !== 'signedOut' ? (

@@ -97,11 +97,21 @@ const ACTIONS: Record<ModAction, { label: string; icon: IconName; tone: 'danger'
   user_ban: { label: 'Üye yasaklandı', icon: 'ban-outline', tone: 'danger' },
   sanction_revoke: { label: 'Yaptırım kaldırıldı', icon: 'shield-checkmark-outline', tone: 'muted' },
   role_change: { label: 'Rol değişti', icon: 'ribbon-outline', tone: 'gold' },
+  match_create: { label: 'Maç eklendi', icon: 'calendar-outline', tone: 'gold' },
+  match_update: { label: 'Maç güncellendi', icon: 'football-outline', tone: 'muted' },
+  match_event_add: { label: 'Maç olayı eklendi', icon: 'add-circle-outline', tone: 'muted' },
+  match_event_delete: { label: 'Maç olayı silindi', icon: 'remove-circle-outline', tone: 'danger' },
 };
 
 export function actionInfo(action: ModAction) {
   return ACTIONS[action] ?? { label: action, icon: 'shield-outline' as IconName, tone: 'muted' as const };
 }
+
+const STATUS_TEXT: Record<string, string> = { scheduled: 'Başlamadı', live: 'Canlı', halftime: 'Devre arası', finished: 'Maç sonu', postponed: 'Ertelendi' };
+const EVENT_TEXT: Record<string, string> = {
+  goal: 'Gol', own_goal: 'Kendi kalesine gol', penalty_goal: 'Penaltı golü', penalty_miss: 'Kaçan penaltı',
+  yellow: 'Sarı kart', red: 'Kırmızı kart', sub: 'Oyuncu değişikliği', var: 'VAR',
+};
 
 const categoryName = (slug: string | undefined) => (slug ? (CATEGORY_BY_SLUG[slug]?.name ?? slug) : '');
 
@@ -119,6 +129,14 @@ export function logDetail(e: ModLogEntry): string {
       return e.meta.kind ? `${SANCTION_LABEL[e.meta.kind]} kaldırıldı` : '';
     case 'report_dismiss':
       return e.meta.reports ? `${e.meta.reports} şikâyet` : '';
+    case 'match_update': {
+      const status = STATUS_TEXT[e.meta.to ?? ''];
+      const moved = e.meta.from && e.meta.to && e.meta.from !== e.meta.to && status ? status : '';
+      return [moved, e.meta.score ? `Skor ${e.meta.score.replace('-', '–')}` : ''].filter(Boolean).join(' · ');
+    }
+    case 'match_event_add':
+    case 'match_event_delete':
+      return [e.meta.minute != null ? `${e.meta.minute}'` : '', EVENT_TEXT[e.meta.type ?? ''] ?? e.meta.type, e.meta.player].filter(Boolean).join(' ');
     default:
       return '';
   }
@@ -128,6 +146,7 @@ export function logTargetHref(e: ModLogEntry): string | null {
   if (e.targetType === 'topic' && e.action !== 'topic_hide') return `/konu/${e.targetId}`;
   if (e.targetType === 'post' && e.meta.topicId && e.action !== 'post_remove') return `/konu/${e.meta.topicId}`;
   if (e.targetType === 'user' && e.targetLabel) return `/moderasyon/uye/${e.targetLabel}`;
+  if (e.targetType === 'match') return `/mac-yonetimi/${e.targetId}`;
   return null;
 }
 

@@ -40,4 +40,6 @@
 
 ## Next (after 1.0)
 - Native push delivery (expo-notifications + worker), crash reporting, ESLint and TanStack Query once the
-  package registry is reachable, jump-to-post links, search pagination, profanity filter.
+  package registry is reachable, search pagination, avatar upload, store screenshots.
+- Done after Phase 9: match administration screens, jump-to-post links, removed-post placeholders, profanity
+  warning (see `RELEASE.md` §6).
